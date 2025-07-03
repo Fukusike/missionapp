@@ -80,35 +80,40 @@ function generateCourseId(): string {
 }
 
 // 課題判定を行う
-export function judgeAssignment(detectedText: string): AssignmentJudgment {
+export function judgeAssignment(detectedText: string, normalizedText?: string): AssignmentJudgment {
   const courses = getCourses()
   const matchedCourses: string[] = []
   let confidence = 0
 
-  // 検出されたテキストを正規化（大文字小文字、空白を統一）
-  const normalizedText = detectedText.toLowerCase().replace(/\s+/g, "")
+  // 正規化されたテキストが提供されていない場合は、従来の方法で正規化
+  const textToAnalyze = normalizedText || detectedText.toLowerCase().replace(/\s+/g, "")
 
   // 各講義名がテキストに含まれているかチェック
   courses.forEach((course) => {
     const normalizedCourseName = course.name.toLowerCase().replace(/\s+/g, "")
     const normalizedInstructor = course.instructor.toLowerCase().replace(/\s+/g, "")
 
-    // 講義名または講師名が含まれているかチェック
-    if (
-      normalizedText.includes(normalizedCourseName) ||
-      normalizedText.includes(normalizedInstructor) ||
-      detectedText.includes(course.name) ||
-      detectedText.includes(course.instructor)
-    ) {
+    // 正規化されたテキストと元のテキストの両方でチェック
+    const matchesNormalized = textToAnalyze.includes(normalizedCourseName) || 
+                             textToAnalyze.includes(normalizedInstructor)
+    const matchesOriginal = detectedText.includes(course.name) || 
+                           detectedText.includes(course.instructor)
+
+    if (matchesNormalized || matchesOriginal) {
       matchedCourses.push(course.name)
       confidence += 30 // 基本的なマッチで30ポイント
+      
+      // 正規化されたテキストでマッチした場合は追加ボーナス
+      if (matchesNormalized) {
+        confidence += 10
+      }
     }
   })
 
-  // 課題関連のキーワードをチェック
+  // 課題関連のキーワードをチェック（正規化されたテキストでも検索）
   const assignmentKeywords = [
     "課題",
-    "宿題",
+    "宿題", 
     "レポート",
     "提出",
     "assignment",

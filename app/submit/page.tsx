@@ -52,6 +52,30 @@ export default function SubmitPage() {
     }
   }
 
+  // テキスト正規化（表記揺れ吸収）関数
+  const normalizeText = (text: string): string => {
+    if (!text) return '';
+
+    const zenkakuToHankakuMap: { [key: string]: string } = {
+      '０': '0', '１': '1', '２': '2', '３': '3', '４': '4', '５': '5', '６': '6', '７': '7', '８': '8', '９': '9',
+      'Ａ': 'A', 'Ｂ': 'B', 'Ｃ': 'C', 'Ｄ': 'D', 'Ｅ': 'E', 'Ｆ': 'F', 'Ｇ': 'G', 'Ｈ': 'H', 'Ｉ': 'I', 'Ｊ': 'J',
+      'Ｋ': 'K', 'Ｌ': 'L', 'Ｍ': 'M', 'Ｎ': 'N', 'Ｏ': 'O', 'Ｐ': 'P', 'Ｑ': 'Q', 'Ｒ': 'R', 'Ｓ': 'S', 'Ｔ': 'T',
+      'Ｕ': 'U', 'Ｖ': 'V', 'Ｗ': 'W', 'Ｘ': 'X', 'Ｙ': 'Y', 'Ｚ': 'Z',
+      'ａ': 'a', 'ｂ': 'b', 'ｃ': 'c', 'ｄ': 'd', 'ｅ': 'e', 'ｆ': 'f', 'ｇ': 'g', 'ｈ': 'h', 'ｉ': 'i', 'ｊ': 'j',
+      'ｋ': 'k', 'ｌ': 'l', 'ｍ': 'm', 'ｎ': 'n', 'ｏ': 'o', 'ｐ': 'p', 'ｑ': 'q', 'ｒ': 'r', 'ｓ': 's', 'ｔ': 't',
+      'ｕ': 'u', 'ｖ': 'v', 'ｗ': 'w', 'ｘ': 'x', 'ｙ': 'y', 'ｚ': 'z',
+      'Ⅰ': '1', 'Ⅱ': '2', 'Ⅲ': '3', 'Ⅳ': '4', 'Ⅴ': '5',
+      '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5', '⑥': '6', '⑦': '7', '⑧': '8', '⑨': '9', '⑩': '10',
+      '　': ' '
+    };
+
+    return text
+      .replace(/[０-９Ａ-Ｚａ-ｚⅠ-Ⅴ①-⑩　]/g, (s) => zenkakuToHankakuMap[s] || s)
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const analyzeImage = async () => {
     if (!assignmentImage) return
 
@@ -73,8 +97,12 @@ export default function SubmitPage() {
       const detectedText = result.data.text
       console.log("検出されたテキスト:", detectedText)
 
-      // 課題判定を実行
-      const assignmentJudgment = judgeAssignment(detectedText)
+      // テキストを正規化して表記揺れを吸収
+      const normalizedText = normalizeText(detectedText)
+      console.log("正規化後のテキスト:", normalizedText)
+
+      // 課題判定を実行（正規化されたテキストと元のテキスト両方を使用）
+      const assignmentJudgment = judgeAssignment(detectedText, normalizedText)
       setJudgment(assignmentJudgment)
 
       toast({
