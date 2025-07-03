@@ -16,32 +16,34 @@ export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [name, setName] = useState("")
-  const [userId, setUserId] = useState("")
+  const [userId, setUserId] = useState(() => generateUserId())
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [isClient, setIsClient] = useState(false)
+  const [isCheckingUser, setIsCheckingUser] = useState(true)
 
   // ページロード時に既存のユーザーデータをチェック
   useEffect(() => {
-    setIsClient(true)
-    
     const checkExistingUser = async () => {
-      const existingUser = await getUser()
-      if (existingUser) {
-        // 既にユーザー登録済みの場合はプロフィールページにリダイレクト
-        router.push("/profile")
-      } else {
-        // 新規ユーザーの場合はユーザーIDを生成
-        setUserId(generateUserId())
+      try {
+        const existingUser = await getUser()
+        if (existingUser) {
+          // 既にユーザー登録済みの場合はプロフィールページにリダイレクト
+          router.push("/profile")
+          return
+        }
+      } catch (error) {
+        console.error("ユーザーチェックエラー:", error)
+      } finally {
+        setIsCheckingUser(false)
       }
     }
     
     checkExistingUser()
   }, [router])
 
-  // クライアント側でのみレンダリング
-  if (!isClient) {
+  // チェック中の表示
+  if (isCheckingUser) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center p-4">
         <div className="text-center">
