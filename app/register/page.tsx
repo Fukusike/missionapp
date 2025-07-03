@@ -37,7 +37,13 @@ export default function RegisterPage() {
 
   // クライアント側でのみレンダリング
   if (!isClient) {
-    return null
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl text-green-800">読み込み中...</h1>
+        </div>
+      </div>
+    )
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

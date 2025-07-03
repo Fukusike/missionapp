@@ -21,6 +21,8 @@ export default function Home() {
 
   // ユーザー登録状態をチェックしてナビゲートする関数
   const navigateWithUserCheck = (path: string) => {
+    if (!isClient) return
+    
     const userData = getUser()
     if (!userData) {
       // ユーザーデータがない場合は登録ページにリダイレクト
@@ -29,6 +31,22 @@ export default function Home() {
       // ユーザーデータがある場合は指定されたページに遷移
       router.push(path)
     }
+  }
+
+  // クライアントサイドレンダリングが完了するまで待機
+  if (!isClient) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-green-50 to-green-100">
+        <main className="flex-1 container max-w-md mx-auto p-4">
+          <div className="space-y-6 py-8">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold text-green-800">ミッションマスター</h1>
+              <p className="text-green-600">読み込み中...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
