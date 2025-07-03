@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Trophy } from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 export default function SuccessPage() {
   const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     // クライアントサイドでのみconfettiをロードして実行
     const loadAndRunConfetti = async () => {
       try {
@@ -49,6 +51,16 @@ export default function SuccessPage() {
 
     loadAndRunConfetti()
   }, [])
+
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl text-green-800">読み込み中...</h1>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center p-4">

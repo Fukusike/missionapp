@@ -27,7 +27,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsClient(true)
-    
+
     //
     // ユーザーデータを取得
     const userData = getUser()
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     // 友達の数を取得
     const friendsList = getFriends()
     setFriendCount(friendsList.length)
-    
+
     // 友達のユーザーデータを取得
     const friendsData = getFriendsData()
     setFriends(friendsData)
@@ -98,7 +98,7 @@ export default function ProfilePage() {
       })
       setFriendCount((prev) => prev + 1)
       setFriendId("")
-      
+
       // 友達のデータを更新
       const updatedFriendsData = getFriendsData()
       setFriends(updatedFriendsData)
@@ -287,7 +287,7 @@ export default function ProfilePage() {
                 <div className="mt-2 text-sm text-green-700">
                   <span className="font-medium">{friendCount}人</span>の友達がいます
                 </div>
-                
+
                 {friends.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <h4 className="font-medium text-green-700">友達リスト</h4>
