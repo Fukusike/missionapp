@@ -1,18 +1,32 @@
+
 // ユーザーの型定義
 export interface User {
   id: string
   name: string
-  profileImage: string | null
+  profile_image: string | null
   points: number
   submissions: number
   badges: string[]
-  createdAt: string
+  last_login: string | null
+  created_at: string
+  updated_at: string
 }
 
 // 友達の型定義
 export interface Friend {
   id: string
   addedAt: string
+}
+
+// 課題提出履歴の型定義
+export interface Submission {
+  id: number
+  user_id: string
+  assignment_name: string
+  points_earned: number
+  submitted_at: string
+  is_valid: boolean
+  image_url: string | null
 }
 
 // クライアントサイドかどうかをチェック
@@ -32,14 +46,21 @@ function setCurrentUserId(userId: string): void {
 }
 
 // ユーザーデータを保存する
-export async function saveUser(user: User): Promise<void> {
+export async function saveUser(user: Omit<User, 'created_at' | 'updated_at' | 'last_login'>): Promise<void> {
   try {
     const response = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(user),
+      body: JSON.stringify({
+        id: user.id,
+        name: user.name,
+        profileImage: user.profile_image,
+        points: user.points,
+        submissions: user.submissions,
+        badges: user.badges,
+      }),
     })
 
     if (!response.ok) {
@@ -116,7 +137,7 @@ export async function getFriends(): Promise<Friend[]> {
     const friends: User[] = await response.json()
     return friends.map(friend => ({
       id: friend.id,
-      addedAt: friend.createdAt // API レスポンスから適切なフィールドを使用
+      addedAt: friend.created_at
     }))
   } catch (error) {
     console.error('友達リスト取得エラー:', error)
@@ -163,6 +184,53 @@ export async function getFriendsData(): Promise<User[]> {
   }
 }
 
+// 課題提出履歴を取得する
+export async function getUserSubmissions(): Promise<Submission[]> {
+  const userId = getCurrentUserId()
+  if (!userId) return []
+
+  try {
+    const response = await fetch(`/api/submissions?userId=${userId}`)
+    if (!response.ok) {
+      throw new Error('提出履歴取得に失敗しました')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('提出履歴取得エラー:', error)
+    return []
+  }
+}
+
+// 課題提出を記録する
+export async function submitAssignment(assignmentData: {
+  assignmentName: string
+  pointsEarned: number
+  isValid: boolean
+  imageUrl?: string
+}): Promise<boolean> {
+  const userId = getCurrentUserId()
+  if (!userId) return false
+
+  try {
+    const response = await fetch('/api/submissions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        ...assignmentData
+      }),
+    })
+
+    return response.ok
+  } catch (error) {
+    console.error('課題提出記録エラー:', error)
+    return false
+  }
+}
+
 // ランダムなユーザーIDを生成する
 export function generateUserId(): string {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -173,44 +241,59 @@ export function generateUserId(): string {
   return result
 }
 
+// ユーザーからログアウト
+export function logoutUser(): void {
+  if (isClient) {
+    localStorage.removeItem('currentUserId')
+  }
+}
+
 // モックユーザーデータを生成する（デモ用）
 export function generateMockUsers(): Record<string, User> {
   return {
     ABC12345: {
       id: "ABC12345",
       name: "たろう",
-      profileImage: null,
+      profile_image: null,
       points: 250,
       submissions: 25,
       badges: ["課題マスター", "連続提出王"],
-      createdAt: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     DEF67890: {
       id: "DEF67890",
       name: "はなこ",
-      profileImage: null,
+      profile_image: null,
       points: 210,
       submissions: 21,
       badges: ["勤勉な学習者"],
-      createdAt: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     GHI13579: {
       id: "GHI13579",
       name: "けんた",
-      profileImage: null,
+      profile_image: null,
       points: 180,
       submissions: 18,
       badges: ["数学の達人"],
-      createdAt: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     JKL24680: {
       id: "JKL24680",
       name: "あやか",
-      profileImage: null,
+      profile_image: null,
       points: 150,
       submissions: 15,
       badges: ["英語の達人"],
-      createdAt: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
   }
 }
@@ -224,11 +307,4 @@ export function getMockUser(userId: string): User | null {
 // 全てのモックユーザーを取得する（デモ用）
 export function getAllMockUsers(): User[] {
   return Object.values(generateMockUsers())
-}
-
-// ユーザーからログアウト
-export function logoutUser(): void {
-  if (isClient) {
-    localStorage.removeItem('currentUserId')
-  }
 }

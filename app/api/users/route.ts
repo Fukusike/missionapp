@@ -1,55 +1,48 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/db'
+import { getAllUsers, upsertUser } from '@/utils/db'
 
-// 全ユーザー取得
+// GET: 全ユーザーを取得
 export async function GET() {
-  const client = await createClient()
-  
   try {
-    const result = await client.query('SELECT * FROM users ORDER BY points DESC')
-    const users = result.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      profileImage: row.profile_image,
-      points: row.points,
-      submissions: row.submissions,
-      badges: row.badges || [],
-      createdAt: row.created_at
-    }))
-    
+    const users = await getAllUsers()
     return NextResponse.json(users)
   } catch (error) {
     console.error('ユーザー取得エラー:', error)
-    return NextResponse.json({ error: 'ユーザー取得に失敗しました' }, { status: 500 })
-  } finally {
-    await client.end()
+    return NextResponse.json(
+      { error: 'ユーザーの取得に失敗しました' },
+      { status: 500 }
+    )
   }
 }
 
-// ユーザー作成・更新
+// POST: ユーザーを作成/更新
 export async function POST(request: NextRequest) {
-  const user = await request.json()
-  const client = await createClient()
-  
   try {
-    await client.query(`
-      INSERT INTO users (id, name, profile_image, points, submissions, badges, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        profile_image = EXCLUDED.profile_image,
-        points = EXCLUDED.points,
-        submissions = EXCLUDED.submissions,
-        badges = EXCLUDED.badges,
-        updated_at = CURRENT_TIMESTAMP
-    `, [user.id, user.name, user.profileImage, user.points, user.submissions, user.badges, user.createdAt])
+    const userData = await request.json()
+    
+    if (!userData.id || !userData.name) {
+      return NextResponse.json(
+        { error: 'ユーザーIDと名前は必須です' },
+        { status: 400 }
+      )
+    }
 
-    return NextResponse.json({ success: true })
+    const user = await upsertUser({
+      id: userData.id,
+      name: userData.name,
+      profileImage: userData.profileImage,
+      points: userData.points,
+      submissions: userData.submissions,
+      badges: userData.badges
+    })
+
+    return NextResponse.json(user, { status: 201 })
   } catch (error) {
-    console.error('ユーザー保存エラー:', error)
-    return NextResponse.json({ error: 'ユーザー保存に失敗しました' }, { status: 500 })
-  } finally {
-    await client.end()
+    console.error('ユーザー作成エラー:', error)
+    return NextResponse.json(
+      { error: 'ユーザーの作成に失敗しました' },
+      { status: 500 }
+    )
   }
 }
