@@ -143,12 +143,18 @@ export default function SubmitPage() {
     const success = await submitAssignment(assignmentType, 10, imageSrc)
 
     if (success) {
-      // 成功時の処理
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      })
+      // 成功時の処理 - confettiを動的にインポート
+      try {
+        const confettiModule = await import("canvas-confetti")
+        const confetti = confettiModule.default
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        })
+      } catch (error) {
+        console.error("Failed to load confetti:", error)
+      }
 
       // 成功ページにリダイレクト
       router.push("/submit/success")
@@ -166,7 +172,7 @@ export default function SubmitPage() {
     setJudgment(null)
   }
 
-  if (!isClient || !user) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
         <div className="container max-w-2xl mx-auto py-8 text-center">
