@@ -1,59 +1,87 @@
+
 "use client"
 
+import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckCircle, Home, Medal, Star, Copy, Check, UserPlus, Users } from "lucide-react"
-import { getUser, getFriends, addFriend, getUserById, getFriendsData, type User } from "@/utils/user-store"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Home, Edit, Copy, Check, LogOut, UserPlus } from "lucide-react"
+import { getUser, updateUser, addFriend, logout, type UserData } from "@/utils/user-store"
 import { useToast } from "@/hooks/use-toast"
-import NotificationSettings from "@/components/notification-settings"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserData | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false)
+  const [editedName, setEditedName] = useState("")
+  const [profileImage, setProfileImage] = useState<string | null>(null)
   const [friendId, setFriendId] = useState("")
   const [copied, setCopied] = useState(false)
-  const [friendCount, setFriendCount] = useState(0)
-  const [isAddingFriend, setIsAddingFriend] = useState(false)
-  const [friends, setFriends] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
-
-    const loadUserData = async () => {
-      // ユーザーデータを取得
-      const userData = await getUser()
-      if (!userData) {
-        // ユーザーデータがない場合は登録ページにリダイレクト
-        router.push("/register")
-        return
+    
+    const loadUser = async () => {
+      try {
+        const userData = await getUser()
+        if (!userData) {
+          router.push("/register")
+          return
+        }
+        setUser(userData)
+        setEditedName(userData.name)
+        setProfileImage(userData.profileImage || null)
+      } catch (error) {
+        console.error('Error loading user:', error)
+        toast({
+          title: "エラー",
+          description: "ユーザー情報の読み込みに失敗しました",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
       }
-
-      setUser(userData)
-
-      // 友達の数を取得
-      const friendsList = await getFriends()
-      setFriendCount(friendsList.length)
-
-      // 友達のユーザーデータを取得
-      const friendsData = await getFriendsData()
-      setFriends(friendsData)
     }
 
-    loadUserData()
-  }, [router])
+    loadUser()
+  }, [router, toast])
+
+  if (!isClient || isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl text-green-800">読み込み中...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setProfileImage(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const copyUserId = () => {
-    if (!user) return
-
     navigator.clipboard.writeText(user.id)
     setCopied(true)
     toast({
@@ -66,8 +94,41 @@ export default function ProfilePage() {
     }, 2000)
   }
 
+  const handleSaveProfile = async () => {
+    if (!editedName.trim()) {
+      toast({
+        title: "エラー",
+        description: "ニックネームを入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const updatedUser = await updateUser({
+        name: editedName.trim(),
+        profileImage: profileImage,
+      })
+
+      if (updatedUser) {
+        setUser(updatedUser)
+        setIsEditDialogOpen(false)
+        toast({
+          title: "保存完了",
+          description: "プロフィールが更新されました",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "プロフィールの更新に失敗しました",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleAddFriend = async () => {
-    if (!friendId || friendId.trim() === "") {
+    if (!friendId.trim()) {
       toast({
         title: "エラー",
         description: "友達のユーザーIDを入力してください",
@@ -76,40 +137,28 @@ export default function ProfilePage() {
       return
     }
 
-    setIsAddingFriend(true)
+    if (friendId.trim() === user.id) {
+      toast({
+        title: "エラー",
+        description: "自分自身を友達に追加することはできません",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
-      // 友達のデータを確認
-      const friendData = await getUserById(friendId.trim())
-
-      if (!friendData) {
-        toast({
-          title: "エラー",
-          description: "指定されたユーザーIDは存在しません",
-          variant: "destructive",
-        })
-        setIsAddingFriend(false)
-        return
-      }
-
-      // 友達を追加
-      const added = await addFriend(friendId.trim())
-
-      if (added) {
-        toast({
-          title: "友達を追加しました",
-          description: `${friendData.name}さんを友達に追加しました`,
-        })
-        setFriendCount((prev) => prev + 1)
+      const success = await addFriend(friendId.trim())
+      if (success) {
         setFriendId("")
-
-        // 友達のデータを更新
-        const updatedFriendsData = await getFriendsData()
-        setFriends(updatedFriendsData)
+        setIsAddFriendDialogOpen(false)
+        toast({
+          title: "友達追加完了",
+          description: "友達が追加されました",
+        })
       } else {
         toast({
-          title: "追加できませんでした",
-          description: "既に追加済みか、自分自身のIDです",
+          title: "エラー",
+          description: "友達の追加に失敗しました。ユーザーIDを確認してください",
           variant: "destructive",
         })
       }
@@ -120,217 +169,164 @@ export default function ProfilePage() {
         variant: "destructive",
       })
     }
-
-    setIsAddingFriend(false)
   }
 
-  if (!isClient || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
-        <div className="container max-w-2xl mx-auto py-4 text-center">
-          <h1 className="text-2xl text-green-800">読み込み中...</h1>
-        </div>
-      </div>
-    )
+  const handleLogout = () => {
+    logout()
+    router.push("/register")
   }
-
-  // 提出履歴のモックデータ
-  const submissions = [
-    { id: 1, date: "2023-04-20", title: "数学の宿題", points: 10 },
-    { id: 2, date: "2023-04-18", title: "英語のエッセイ", points: 15 },
-    { id: 3, date: "2023-04-15", title: "理科のレポート", points: 20 },
-    { id: 4, date: "2023-04-10", title: "社会の調査課題", points: 10 },
-  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
-      <div className="container max-w-2xl mx-auto py-4">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/")}
-          className="mb-4 text-green-700 hover:text-green-800 hover:bg-green-100"
-        >
-          <Home className="mr-2 h-4 w-4" />
-          ホームに戻る
-        </Button>
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="outline" onClick={() => router.push("/")} className="border-green-200 text-green-700">
+            <Home className="h-4 w-4 mr-2" />
+            ホーム
+          </Button>
+          <Button variant="outline" onClick={handleLogout} className="border-red-200 text-red-700">
+            <LogOut className="h-4 w-4 mr-2" />
+            ログアウト
+          </Button>
+        </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile">プロフィール</TabsTrigger>
-            <TabsTrigger value="friends">友達</TabsTrigger>
-            <TabsTrigger value="settings">設定</TabsTrigger>
-          </TabsList>
+        {/* Profile Card */}
+        <Card className="border-green-200 bg-white/90 backdrop-blur-sm mb-6">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Avatar className="w-24 h-24 border-4 border-green-200">
+                <AvatarImage src={user.profileImage || ""} />
+                <AvatarFallback className="bg-green-100 text-green-800 text-2xl">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <CardTitle className="text-2xl text-green-800">{user.name}</CardTitle>
+            <CardDescription className="text-green-600">ID: {user.id}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-800">{user.points}</div>
+                <div className="text-sm text-green-600">ポイント</div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-800">{user.submissions}</div>
+                <div className="text-sm text-green-600">提出数</div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-800">{user.badges.length}</div>
+                <div className="text-sm text-green-600">バッジ</div>
+              </div>
+            </div>
 
-          <TabsContent value="profile" className="space-y-6">
-            <Card className="border-green-200 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl text-green-800">マイプロフィール</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-green-600 border-green-200 hover:bg-green-50"
-                    onClick={() => router.push("/ranking")}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    友達のランキング
+            {user.badges.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-green-800 mb-2">獲得バッジ</h3>
+                <div className="flex flex-wrap gap-2">
+                  {user.badges.map((badge, index) => (
+                    <Badge key={index} className="bg-green-100 text-green-800">
+                      {badge}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex-1 bg-green-500 hover:bg-green-600">
+                    <Edit className="h-4 w-4 mr-2" />
+                    プロフィール編集
                   </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 mb-4">
-                  <Avatar className="w-16 h-16 border-2 border-green-200">
-                    <AvatarImage src={user.profileImage || ""} />
-                    <AvatarFallback className="bg-green-100 text-green-800 text-xl">
-                      {user.name ? user.name.charAt(0).toUpperCase() : "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 className="text-lg font-semibold text-green-800">{user.name}</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Medal className="h-4 w-4 text-green-600" />
-                      <span className="text-green-700 text-sm">ランキング: {user.submissions > 0 ? "5位" : "-"}</span>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>プロフィール編集</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="edit-name">ニックネーム</Label>
+                      <Input
+                        id="edit-name"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        className="border-green-200"
+                      />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-green-600" />
-                      <span className="text-green-700 text-sm">{user.points} ポイント</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-green-700">あなたのユーザーID</Label>
-                    <div className="flex items-center space-x-2">
-                      <Input value={user.id} readOnly className="border-green-200 bg-green-50 font-mono" />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="border-green-200 text-green-600 hover:bg-green-50"
-                        onClick={copyUserId}
-                      >
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-green-600">
-                      このIDを友達と交換して、お互いのランキングを見ることができます
-                    </p>
-                  </div>
-
-                  <div className="pt-2">
-                    <h3 className="text-sm font-medium text-green-700 mb-2">獲得した称号</h3>
-                    {user.badges && user.badges.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {user.badges.map((badge, index) => (
-                          <Badge key={index} className="bg-green-100 text-green-800 hover:bg-green-200">
-                            {badge}
-                          </Badge>
-                        ))}
+                    <div>
+                      <Label htmlFor="edit-image">プロフィール画像</Label>
+                      <div className="flex flex-col items-center gap-4">
+                        <Avatar className="w-20 h-20">
+                          <AvatarImage src={profileImage || ""} />
+                          <AvatarFallback className="bg-green-100 text-green-800">
+                            {editedName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Input
+                          id="edit-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="border-green-200"
+                        />
                       </div>
-                    ) : (
-                      <p className="text-sm text-green-600">まだ称号を獲得していません</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-200 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl text-green-800">提出履歴</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {submissions.length > 0 ? (
-                  <div className="space-y-3">
-                    {submissions.map((submission) => (
-                      <div
-                        key={submission.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <div>
-                            <p className="font-medium text-green-800">{submission.title}</p>
-                            <p className="text-xs text-green-600">{submission.date}</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-green-200 text-green-800 hover:bg-green-300">+{submission.points}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-green-600">まだ課題を提出していません</p>
-                    <Button className="mt-4 bg-green-500 hover:bg-green-600" onClick={() => router.push("/submit")}>
-                      課題を提出する
+                    </div>
+                    <Button onClick={handleSaveProfile} className="w-full bg-green-500 hover:bg-green-600">
+                      保存
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </DialogContent>
+              </Dialog>
 
-          <TabsContent value="friends" className="space-y-6">
-            <Card className="border-green-200 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl text-green-800">友達を追加</CardTitle>
-                <CardDescription className="text-green-600">友達のユーザーIDを入力して追加しましょう</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    placeholder="友達のユーザーID"
-                    value={friendId}
-                    onChange={(e) => setFriendId(e.target.value)}
-                    className="border-green-200 focus-visible:ring-green-500"
-                  />
-                  <Button
-                    type="button"
-                    className="bg-green-500 hover:bg-green-600"
-                    onClick={handleAddFriend}
-                    disabled={isAddingFriend}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={copyUserId} className="border-green-200 text-green-600">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Friend Card */}
+        <Card className="border-green-200 bg-white/90 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-green-800">友達を追加</CardTitle>
+            <CardDescription className="text-green-600">
+              友達のユーザーIDを入力して、お互いのランキングを見ることができます
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={isAddFriendDialogOpen} onOpenChange={setIsAddFriendDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full bg-green-500 hover:bg-green-600">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  友達を追加
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>友達を追加</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="friend-id">友達のユーザーID</Label>
+                    <Input
+                      id="friend-id"
+                      value={friendId}
+                      onChange={(e) => setFriendId(e.target.value)}
+                      placeholder="例: ABC12345"
+                      className="border-green-200 font-mono"
+                    />
+                  </div>
+                  <Button onClick={handleAddFriend} className="w-full bg-green-500 hover:bg-green-600">
                     追加
                   </Button>
                 </div>
-                <div className="mt-2 text-sm text-green-700">
-                  <span className="font-medium">{friendCount}人</span>の友達がいます
-                </div>
-
-                {friends.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="font-medium text-green-700">友達リスト</h4>
-                    <div className="space-y-2">
-                      {friends.map((friend) => (
-                        <div
-                          key={friend.id}
-                          className="flex items-center gap-2 p-2 rounded-lg bg-green-50"
-                        >
-                          <Avatar className="w-6 h-6 border border-green-200">
-                            <AvatarImage src={friend.profileImage || ""} />
-                            <AvatarFallback className="bg-green-50 text-green-800 text-xs">
-                              {friend.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-green-800">{friend.name}</p>
-                            <p className="text-xs text-green-600">{friend.points}ポイント</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <NotificationSettings />
-          </TabsContent>
-        </Tabs>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

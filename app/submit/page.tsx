@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Camera, ImageIcon, X, Scan, BookOpen } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { getUser, saveUser } from "@/utils/user-store"
+import { getUser, submitAssignment, type UserData } from "@/utils/user-store"
 import { getCourses, judgeAssignment, type AssignmentJudgment } from "@/utils/course-store"
 import AssignmentJudgmentDisplay from "@/components/assignment-judgment"
 import { useToast } from "@/hooks/use-toast"
@@ -22,7 +22,7 @@ export default function SubmitPage() {
   const [assignmentImage, setAssignmentImage] = useState<string | null>(null)
   const [description, setDescription] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(isAnalyzing)
   const [user, setUser] = useState<any>(null)
   const [judgment, setJudgment] = useState<AssignmentJudgment | null>(null)
   const [courses, setCourses] = useState<any[]>([])
@@ -30,7 +30,7 @@ export default function SubmitPage() {
 
   useEffect(() => {
     setIsClient(true)
-    
+
     // ユーザーデータを取得
     const userData = getUser()
     if (!userData) {
@@ -138,47 +138,30 @@ export default function SubmitPage() {
 
     setIsLoading(true)
 
-    // ユーザーデータを更新
-    if (user) {
-      let updatedUser = { ...user }
+    // 課題タイプを定義
+    const assignmentType = judgment.isValid ? "valid" : "invalid";
+    const imageSrc = assignmentImage || "";
 
-      if (judgment.isValid) {
-        // 課題として認定された場合のみポイント付与
-        const points = 10
-        updatedUser = {
-          ...user,
-          points: user.points + points,
-          submissions: user.submissions + 1,
-        }
+    // 課題提出をAPIに送信
+    const success = await submitAssignment(assignmentType, 10, imageSrc)
 
-        // 初めての提出の場合は称号を追加
-        if (user.submissions === 0) {
-          updatedUser.badges = [...(user.badges || []), "勤勉な学習者"]
-        }
+    if (success) {
+      // 成功時の処理
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+      })
 
-        toast({
-          title: "課題提出完了！",
-          description: `+${points}ポイント獲得しました！`,
-        })
-      } else {
-        // 課題として認定されなかった場合はポイント付与なし
-        toast({
-          title: "提出完了",
-          description: "課題として認定されなかったため、ポイントは付与されませんでした",
-          variant: "destructive",
-        })
-      }
-
-      // ユーザーデータを保存
-      saveUser(updatedUser)
-    }
-
-    // 仮の処理（実際の実装では適切なデータ保存処理に置き換える）
-    setTimeout(() => {
-      setIsLoading(false)
-      // 提出後は成功画面に遷移
+      // 成功ページにリダイレクト
       router.push("/submit/success")
-    }, 1000)
+    } else {
+      toast({
+        title: "エラー",
+        description: "課題の提出に失敗しました",
+        variant: "destructive",
+      })
+    }
   }
 
   const clearImage = () => {
