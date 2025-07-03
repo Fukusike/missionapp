@@ -5,10 +5,11 @@ import { getUser, deleteUser, updateLastLogin } from '@/utils/db'
 // GET: 特定ユーザーを取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUser(params.id)
+    const { id } = await params
+    const user = await getUser(id)
     
     if (!user) {
       return NextResponse.json(
@@ -18,7 +19,7 @@ export async function GET(
     }
 
     // 最後のログイン時間を更新
-    await updateLastLogin(params.id)
+    await updateLastLogin(id)
 
     return NextResponse.json(user)
   } catch (error) {
@@ -33,10 +34,11 @@ export async function GET(
 // DELETE: ユーザーを削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteUser(params.id)
+    const { id } = await params
+    await deleteUser(id)
     return NextResponse.json({ message: 'ユーザーが削除されました' })
   } catch (error) {
     console.error('ユーザー削除エラー:', error)
