@@ -1,3 +1,6 @@
+
+import { createClient } from './db'
+
 // ユーザーの型定義
 export interface User {
   id: string
@@ -18,112 +21,189 @@ export interface Friend {
 // クライアントサイドかどうかをチェック
 const isClient = typeof window !== "undefined"
 
-// ユーザーデータを保存する
-export function saveUser(user: User): void {
-  if (isClient) {
-    // 現在のユーザーとして保存
-    localStorage.setItem("user", JSON.stringify(user))
+// 現在のユーザーIDをlocalStorageから取得
+function getCurrentUserId(): string | null {
+  if (!isClient) return null
+  return localStorage.getItem('currentUserId')
+}
 
-    // 全ユーザーリストにも追加
-    const allUsers = getAllRegisteredUsers()
-    allUsers[user.id] = user
-    localStorage.setItem("allUsers", JSON.stringify(allUsers))
+// 現在のユーザーIDをlocalStorageに保存
+function setCurrentUserId(userId: string): void {
+  if (isClient) {
+    localStorage.setItem('currentUserId', userId)
+  }
+}
+
+// ユーザーデータを保存する
+export async function saveUser(user: User): Promise<void> {
+  const client = await createClient()
+  
+  try {
+    await client.query(`
+      INSERT INTO users (id, name, profile_image, points, submissions, badges, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        profile_image = EXCLUDED.profile_image,
+        points = EXCLUDED.points,
+        submissions = EXCLUDED.submissions,
+        badges = EXCLUDED.badges,
+        updated_at = CURRENT_TIMESTAMP
+    `, [user.id, user.name, user.profileImage, user.points, user.submissions, user.badges, user.createdAt])
+
+    // 現在のユーザーとして設定
+    setCurrentUserId(user.id)
+  } catch (error) {
+    console.error('ユーザー保存エラー:', error)
+    throw error
+  } finally {
+    await client.end()
   }
 }
 
 // ユーザーデータを取得する
-export function getUser(): User | null {
-  if (isClient) {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      return JSON.parse(userData)
-    }
-  }
-  return null
+export async function getUser(): Promise<User | null> {
+  const userId = getCurrentUserId()
+  if (!userId) return null
+
+  return await getUserById(userId)
 }
 
 // 全ての登録ユーザーを取得する
-export function getAllRegisteredUsers(): Record<string, User> {
-  if (isClient) {
-    const allUsersData = localStorage.getItem("allUsers")
-    if (allUsersData) {
-      return JSON.parse(allUsersData)
+export async function getAllRegisteredUsers(): Promise<Record<string, User>> {
+  const client = await createClient()
+  
+  try {
+    const result = await client.query('SELECT * FROM users ORDER BY points DESC')
+    const users: Record<string, User> = {}
+    
+    for (const row of result.rows) {
+      users[row.id] = {
+        id: row.id,
+        name: row.name,
+        profileImage: row.profile_image,
+        points: row.points,
+        submissions: row.submissions,
+        badges: row.badges || [],
+        createdAt: row.created_at
+      }
     }
+    
+    return users
+  } catch (error) {
+    console.error('全ユーザー取得エラー:', error)
+    return {}
+  } finally {
+    await client.end()
   }
-  return {}
 }
 
 // 特定のユーザーIDのユーザーを取得する
-export function getUserById(userId: string): User | null {
-  // 実際に登録されたユーザーから検索
-  const allUsers = getAllRegisteredUsers()
-  if (allUsers[userId]) {
-    return allUsers[userId]
-  }
-
-  // 見つからない場合はモックデータから検索
-  return getMockUser(userId)
-}
-
-// 友達リストを保存する
-export function saveFriends(friends: Friend[]): void {
-  if (isClient) {
-    localStorage.setItem("friends", JSON.stringify(friends))
+export async function getUserById(userId: string): Promise<User | null> {
+  const client = await createClient()
+  
+  try {
+    const result = await client.query('SELECT * FROM users WHERE id = $1', [userId])
+    
+    if (result.rows.length === 0) {
+      return null
+    }
+    
+    const row = result.rows[0]
+    return {
+      id: row.id,
+      name: row.name,
+      profileImage: row.profile_image,
+      points: row.points,
+      submissions: row.submissions,
+      badges: row.badges || [],
+      createdAt: row.created_at
+    }
+  } catch (error) {
+    console.error('ユーザー取得エラー:', error)
+    return null
+  } finally {
+    await client.end()
   }
 }
 
 // 友達リストを取得する
-export function getFriends(): Friend[] {
-  if (isClient) {
-    const friendsData = localStorage.getItem("friends")
-    if (friendsData) {
-      return JSON.parse(friendsData)
-    }
+export async function getFriends(): Promise<Friend[]> {
+  const userId = getCurrentUserId()
+  if (!userId) return []
+
+  const client = await createClient()
+  
+  try {
+    const result = await client.query(
+      'SELECT friend_id as id, added_at FROM friendships WHERE user_id = $1 ORDER BY added_at DESC',
+      [userId]
+    )
+    
+    return result.rows.map(row => ({
+      id: row.id,
+      addedAt: row.added_at
+    }))
+  } catch (error) {
+    console.error('友達リスト取得エラー:', error)
+    return []
+  } finally {
+    await client.end()
   }
-  return []
 }
 
 // 友達を追加する
-export function addFriend(friendId: string): boolean {
-  const friends = getFriends()
-
-  // 既に追加済みの場合は追加しない
-  if (friends.some((friend) => friend.id === friendId)) {
-    return false
-  }
+export async function addFriend(friendId: string): Promise<boolean> {
+  const userId = getCurrentUserId()
+  if (!userId) return false
 
   // 自分自身は追加できない
-  const user = getUser()
-  if (user && user.id === friendId) {
+  if (userId === friendId) return false
+
+  const client = await createClient()
+  
+  try {
+    // 友達のユーザーが存在するかチェック
+    const friendCheck = await client.query('SELECT id FROM users WHERE id = $1', [friendId])
+    if (friendCheck.rows.length === 0) {
+      return false
+    }
+
+    // 既に友達かどうかチェック
+    const existingFriend = await client.query(
+      'SELECT id FROM friendships WHERE user_id = $1 AND friend_id = $2',
+      [userId, friendId]
+    )
+    if (existingFriend.rows.length > 0) {
+      return false
+    }
+
+    // 友達を追加
+    await client.query(
+      'INSERT INTO friendships (user_id, friend_id) VALUES ($1, $2)',
+      [userId, friendId]
+    )
+    
+    return true
+  } catch (error) {
+    console.error('友達追加エラー:', error)
     return false
+  } finally {
+    await client.end()
   }
-
-  // 友達のユーザーデータを確認
-  const friendUser = getUserById(friendId)
-  if (!friendUser) {
-    return false
-  }
-
-  friends.push({
-    id: friendId,
-    addedAt: new Date().toISOString(),
-  })
-
-  saveFriends(friends)
-  return true
 }
 
 // 友達のユーザーデータを取得する
-export function getFriendsData(): User[] {
-  const friends = getFriends()
+export async function getFriendsData(): Promise<User[]> {
+  const friends = await getFriends()
   const friendsData: User[] = []
 
-  friends.forEach((friend) => {
-    const friendData = getUserById(friend.id)
+  for (const friend of friends) {
+    const friendData = await getUserById(friend.id)
     if (friendData) {
       friendsData.push(friendData)
     }
-  })
+  }
 
   return friendsData
 }
@@ -189,4 +269,11 @@ export function getMockUser(userId: string): User | null {
 // 全てのモックユーザーを取得する（デモ用）
 export function getAllMockUsers(): User[] {
   return Object.values(generateMockUsers())
+}
+
+// ユーザーからログアウト
+export function logoutUser(): void {
+  if (isClient) {
+    localStorage.removeItem('currentUserId')
+  }
 }

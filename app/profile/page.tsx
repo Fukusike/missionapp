@@ -28,24 +28,27 @@ export default function ProfilePage() {
   useEffect(() => {
     setIsClient(true)
 
-    //
-    // ユーザーデータを取得
-    const userData = getUser()
-    if (!userData) {
-      // ユーザーデータがない場合は登録ページにリダイレクト
-      router.push("/register")
-      return
+    const loadUserData = async () => {
+      // ユーザーデータを取得
+      const userData = await getUser()
+      if (!userData) {
+        // ユーザーデータがない場合は登録ページにリダイレクト
+        router.push("/register")
+        return
+      }
+
+      setUser(userData)
+
+      // 友達の数を取得
+      const friendsList = await getFriends()
+      setFriendCount(friendsList.length)
+
+      // 友達のユーザーデータを取得
+      const friendsData = await getFriendsData()
+      setFriends(friendsData)
     }
 
-    setUser(userData)
-
-    // 友達の数を取得
-    const friendsList = getFriends()
-    setFriendCount(friendsList.length)
-
-    // 友達のユーザーデータを取得
-    const friendsData = getFriendsData()
-    setFriends(friendsData)
+    loadUserData()
   }, [router])
 
   const copyUserId = () => {
@@ -63,7 +66,7 @@ export default function ProfilePage() {
     }, 2000)
   }
 
-  const handleAddFriend = () => {
+  const handleAddFriend = async () => {
     if (!friendId || friendId.trim() === "") {
       toast({
         title: "エラー",
@@ -75,37 +78,45 @@ export default function ProfilePage() {
 
     setIsAddingFriend(true)
 
-    // 友達のデータを確認（実際のユーザーとモックユーザーの両方をチェック）
-    const friendData = getUserById(friendId.trim())
+    try {
+      // 友達のデータを確認
+      const friendData = await getUserById(friendId.trim())
 
-    if (!friendData) {
+      if (!friendData) {
+        toast({
+          title: "エラー",
+          description: "指定されたユーザーIDは存在しません",
+          variant: "destructive",
+        })
+        setIsAddingFriend(false)
+        return
+      }
+
+      // 友達を追加
+      const added = await addFriend(friendId.trim())
+
+      if (added) {
+        toast({
+          title: "友達を追加しました",
+          description: `${friendData.name}さんを友達に追加しました`,
+        })
+        setFriendCount((prev) => prev + 1)
+        setFriendId("")
+
+        // 友達のデータを更新
+        const updatedFriendsData = await getFriendsData()
+        setFriends(updatedFriendsData)
+      } else {
+        toast({
+          title: "追加できませんでした",
+          description: "既に追加済みか、自分自身のIDです",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
       toast({
         title: "エラー",
-        description: "指定されたユーザーIDは存在しません",
-        variant: "destructive",
-      })
-      setIsAddingFriend(false)
-      return
-    }
-
-    // 友達を追加
-    const added = addFriend(friendId.trim())
-
-    if (added) {
-      toast({
-        title: "友達を追加しました",
-        description: `${friendData.name}さんを友達に追加しました`,
-      })
-      setFriendCount((prev) => prev + 1)
-      setFriendId("")
-
-      // 友達のデータを更新
-      const updatedFriendsData = getFriendsData()
-      setFriends(updatedFriendsData)
-    } else {
-      toast({
-        title: "追加できませんでした",
-        description: "既に追加済みか、自分自身のIDです",
+        description: "友達の追加に失敗しました",
         variant: "destructive",
       })
     }

@@ -25,14 +25,19 @@ export default function RegisterPage() {
   // ページロード時に既存のユーザーデータをチェック
   useEffect(() => {
     setIsClient(true)
-    const existingUser = getUser()
-    if (existingUser) {
-      // 既にユーザー登録済みの場合はプロフィールページにリダイレクト
-      router.push("/profile")
-    } else {
-      // 新規ユーザーの場合はユーザーIDを生成
-      setUserId(generateUserId())
+    
+    const checkExistingUser = async () => {
+      const existingUser = await getUser()
+      if (existingUser) {
+        // 既にユーザー登録済みの場合はプロフィールページにリダイレクト
+        router.push("/profile")
+      } else {
+        // 新規ユーザーの場合はユーザーIDを生成
+        setUserId(generateUserId())
+      }
     }
+    
+    checkExistingUser()
   }, [router])
 
   // クライアント側でのみレンダリング
@@ -94,7 +99,7 @@ export default function RegisterPage() {
       createdAt: new Date().toISOString(),
     }
 
-    saveUser(userData)
+    await saveUser(userData)
 
     // 登録完了を表示
     toast({

@@ -20,7 +20,7 @@ export default function RankingPage() {
 
   useEffect(() => {
     setIsClient(true)
-    
+
     // ユーザーデータを取得
     const userData = getUser()
     if (!userData) {
@@ -31,42 +31,28 @@ export default function RankingPage() {
 
     setUser(userData)
 
-    // 全ユーザーのランキングデータを取得
+    async function loadRankingData() {
+      // 全ユーザーのランキングデータを取得
     const mockUsers = getAllMockUsers()
     const registeredUsers = Object.values(getAllRegisteredUsers())
 
-    // モックユーザーと登録ユーザーを結合（重複を除く）
-    const uniqueUsers = new Map<string, User>()
 
-    // モックユーザーを追加
-    mockUsers.forEach((user) => {
-      uniqueUsers.set(user.id, user)
-    })
+      // 登録ユーザーをポイント順にソート
+      registeredUsers.sort((a, b) => b.points - a.points)
+      setAllUsers(registeredUsers)
 
-    // 登録ユーザーを追加（同じIDがあれば上書き）
-    registeredUsers.forEach((user) => {
-      uniqueUsers.set(user.id, user)
-    })
+      // 友達のデータを取得
+      const friendsData = await getFriendsData()
 
-    // 自分のデータも追加
-    if (userData.submissions > 0 || userData.points > 0) {
-      uniqueUsers.set(userData.id, userData)
+      // 自分のデータも追加
+      friendsData.push(userData)
+
+      // ポイント順にソート
+      friendsData.sort((a, b) => b.points - a.points)
+      setFriendUsers(friendsData)
     }
 
-    // Mapから配列に変換してポイント順にソート
-    const allUsersData = Array.from(uniqueUsers.values())
-    allUsersData.sort((a, b) => b.points - a.points)
-    setAllUsers(allUsersData)
-
-    // 友達のデータを取得
-    const friendsData = getFriendsData()
-
-    // 自分のデータも追加
-    friendsData.push(userData)
-
-    // ポイント順にソート
-    friendsData.sort((a, b) => b.points - a.points)
-    setFriendUsers(friendsData)
+    loadRankingData()
   }, [router])
 
   // メダルの色を取得する関数
