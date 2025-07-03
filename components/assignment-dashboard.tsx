@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,11 @@ export default function AssignmentDashboard() {
   const [isDetecting, setIsDetecting] = useState(false)
   const [assignmentData, setAssignmentData] = useState<AssignmentData | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleFileUpload = useCallback((file: File) => {
     if (file && (file.type.startsWith("image/") || file.type === "application/pdf")) {
