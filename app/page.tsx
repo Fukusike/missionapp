@@ -10,8 +10,10 @@ import { getUser } from "@/utils/user-store"
 export default function Home() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     // ユーザーデータをチェック（リダイレクトはしない）
     const userData = getUser()
     setUser(userData)
@@ -102,7 +104,7 @@ export default function Home() {
             </Card>
           </div>
 
-          {!user && (
+          {isClient && !user && (
             <Card className="border-green-200 bg-green-50/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <p className="text-green-700 mb-3">まずはユーザー登録をして始めましょう！</p>

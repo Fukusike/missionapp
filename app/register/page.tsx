@@ -20,9 +20,11 @@ export default function RegisterPage() {
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   // ページロード時に既存のユーザーデータをチェック
   useEffect(() => {
+    setIsClient(true)
     const existingUser = getUser()
     if (existingUser) {
       // 既にユーザー登録済みの場合はプロフィールページにリダイレクト
@@ -32,6 +34,11 @@ export default function RegisterPage() {
       setUserId(generateUserId())
     }
   }, [router])
+
+  // クライアント側でのみレンダリング
+  if (!isClient) {
+    return null
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

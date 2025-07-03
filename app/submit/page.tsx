@@ -80,16 +80,14 @@ export default function SubmitPage() {
     if (!assignmentImage) return
 
     setIsAnalyzing(true)
+    setJudgment(null)
 
     try {
-      // Tesseract.jsを動的にインポート
-      const Tesseract = await import("tesseract.js")
-
-      // OCR処理を実行
-      const result = await Tesseract.recognize(assignmentImage, "jpn+eng", {
-        logger: (m) => {
+      const result = await (await import("tesseract.js")).recognize(assignmentImage, "jpn+eng", {
+        logger: (m: any) => {
           if (m.status === "recognizing text") {
-            console.log(`OCR進行状況: ${Math.round(m.progress * 100)}%`)
+            const progress = Math.round(m.progress * 100)
+            console.log(`OCR進行状況: ${progress}%`)
           }
         },
       })
@@ -111,12 +109,13 @@ export default function SubmitPage() {
         variant: assignmentJudgment.isValid ? "default" : "destructive",
       })
     } catch (error) {
-      console.error("OCR処理エラー:", error)
+      console.error("OCR解析エラー:", error)
       toast({
-        title: "解析エラー",
+        title: "エラー",
         description: "画像の解析に失敗しました。もう一度お試しください。",
         variant: "destructive",
       })
+      setJudgment(null)
     } finally {
       setIsAnalyzing(false)
     }
