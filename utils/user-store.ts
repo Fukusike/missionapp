@@ -1,6 +1,3 @@
-
-import { createClient } from './db'
-
 // ユーザーの型定義
 export interface User {
   id: string
@@ -36,28 +33,24 @@ function setCurrentUserId(userId: string): void {
 
 // ユーザーデータを保存する
 export async function saveUser(user: User): Promise<void> {
-  const client = await createClient()
-  
   try {
-    await client.query(`
-      INSERT INTO users (id, name, profile_image, points, submissions, badges, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        profile_image = EXCLUDED.profile_image,
-        points = EXCLUDED.points,
-        submissions = EXCLUDED.submissions,
-        badges = EXCLUDED.badges,
-        updated_at = CURRENT_TIMESTAMP
-    `, [user.id, user.name, user.profileImage, user.points, user.submissions, user.badges, user.createdAt])
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(user),
+    })
+
+    if (!response.ok) {
+      throw new Error('ユーザー保存に失敗しました')
+    }
 
     // 現在のユーザーとして設定
     setCurrentUserId(user.id)
   } catch (error) {
     console.error('ユーザー保存エラー:', error)
     throw error
-  } finally {
-    await client.end()
   }
 }
 
@@ -71,59 +64,41 @@ export async function getUser(): Promise<User | null> {
 
 // 全ての登録ユーザーを取得する
 export async function getAllRegisteredUsers(): Promise<Record<string, User>> {
-  const client = await createClient()
-  
   try {
-    const result = await client.query('SELECT * FROM users ORDER BY points DESC')
-    const users: Record<string, User> = {}
-    
-    for (const row of result.rows) {
-      users[row.id] = {
-        id: row.id,
-        name: row.name,
-        profileImage: row.profile_image,
-        points: row.points,
-        submissions: row.submissions,
-        badges: row.badges || [],
-        createdAt: row.created_at
-      }
+    const response = await fetch('/api/users')
+    if (!response.ok) {
+      throw new Error('ユーザー取得に失敗しました')
     }
-    
-    return users
+
+    const users: User[] = await response.json()
+    const usersRecord: Record<string, User> = {}
+
+    for (const user of users) {
+      usersRecord[user.id] = user
+    }
+
+    return usersRecord
   } catch (error) {
     console.error('全ユーザー取得エラー:', error)
     return {}
-  } finally {
-    await client.end()
   }
 }
 
 // 特定のユーザーIDのユーザーを取得する
 export async function getUserById(userId: string): Promise<User | null> {
-  const client = await createClient()
-  
   try {
-    const result = await client.query('SELECT * FROM users WHERE id = $1', [userId])
-    
-    if (result.rows.length === 0) {
-      return null
+    const response = await fetch(`/api/users/${userId}`)
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('ユーザー取得に失敗しました')
     }
-    
-    const row = result.rows[0]
-    return {
-      id: row.id,
-      name: row.name,
-      profileImage: row.profile_image,
-      points: row.points,
-      submissions: row.submissions,
-      badges: row.badges || [],
-      createdAt: row.created_at
-    }
+
+    return await response.json()
   } catch (error) {
     console.error('ユーザー取得エラー:', error)
     return null
-  } finally {
-    await client.end()
   }
 }
 
@@ -132,23 +107,20 @@ export async function getFriends(): Promise<Friend[]> {
   const userId = getCurrentUserId()
   if (!userId) return []
 
-  const client = await createClient()
-  
   try {
-    const result = await client.query(
-      'SELECT friend_id as id, added_at FROM friendships WHERE user_id = $1 ORDER BY added_at DESC',
-      [userId]
-    )
-    
-    return result.rows.map(row => ({
-      id: row.id,
-      addedAt: row.added_at
+    const response = await fetch(`/api/friends?userId=${userId}`)
+    if (!response.ok) {
+      throw new Error('友達リスト取得に失敗しました')
+    }
+
+    const friends: User[] = await response.json()
+    return friends.map(friend => ({
+      id: friend.id,
+      addedAt: friend.createdAt // API レスポンスから適切なフィールドを使用
     }))
   } catch (error) {
     console.error('友達リスト取得エラー:', error)
     return []
-  } finally {
-    await client.end()
   }
 }
 
@@ -157,55 +129,38 @@ export async function addFriend(friendId: string): Promise<boolean> {
   const userId = getCurrentUserId()
   if (!userId) return false
 
-  // 自分自身は追加できない
-  if (userId === friendId) return false
-
-  const client = await createClient()
-  
   try {
-    // 友達のユーザーが存在するかチェック
-    const friendCheck = await client.query('SELECT id FROM users WHERE id = $1', [friendId])
-    if (friendCheck.rows.length === 0) {
-      return false
-    }
+    const response = await fetch('/api/friends', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, friendId }),
+    })
 
-    // 既に友達かどうかチェック
-    const existingFriend = await client.query(
-      'SELECT id FROM friendships WHERE user_id = $1 AND friend_id = $2',
-      [userId, friendId]
-    )
-    if (existingFriend.rows.length > 0) {
-      return false
-    }
-
-    // 友達を追加
-    await client.query(
-      'INSERT INTO friendships (user_id, friend_id) VALUES ($1, $2)',
-      [userId, friendId]
-    )
-    
-    return true
+    return response.ok
   } catch (error) {
     console.error('友達追加エラー:', error)
     return false
-  } finally {
-    await client.end()
   }
 }
 
 // 友達のユーザーデータを取得する
 export async function getFriendsData(): Promise<User[]> {
-  const friends = await getFriends()
-  const friendsData: User[] = []
+  const userId = getCurrentUserId()
+  if (!userId) return []
 
-  for (const friend of friends) {
-    const friendData = await getUserById(friend.id)
-    if (friendData) {
-      friendsData.push(friendData)
+  try {
+    const response = await fetch(`/api/friends?userId=${userId}`)
+    if (!response.ok) {
+      throw new Error('友達データ取得に失敗しました')
     }
-  }
 
-  return friendsData
+    return await response.json()
+  } catch (error) {
+    console.error('友達データ取得エラー:', error)
+    return []
+  }
 }
 
 // ランダムなユーザーIDを生成する
