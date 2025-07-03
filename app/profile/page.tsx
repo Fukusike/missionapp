@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -30,7 +29,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsClient(true)
-    
+
     const loadUser = async () => {
       try {
         const userData = await getUser()
@@ -232,6 +231,15 @@ export default function ProfilePage() {
                   ))}
                 </div>
               </div>
+            )}
+            {user.createdAt && (
+              <p className="text-sm text-green-600">
+                登録日: {new Date(user.createdAt).toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                })}
+              </p>
             )}
 
             <div className="flex gap-2">

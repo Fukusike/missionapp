@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -23,7 +22,7 @@ export default function RankingPage() {
 
   useEffect(() => {
     setIsClient(true)
-    
+
     const loadData = async () => {
       try {
         const userData = await getUser()
@@ -31,15 +30,15 @@ export default function RankingPage() {
           router.push("/register")
           return
         }
-        
+
         setCurrentUser(userData)
-        
+
         // 友達リストと全体ランキングを並行して取得
         const [friendsData, rankingData] = await Promise.all([
           getFriends(),
           getRankingData()
         ])
-        
+
         setFriends(friendsData)
         setAllUsers(rankingData)
       } catch (error) {
@@ -125,9 +124,9 @@ export default function RankingPage() {
       {users.map((user, index) => {
         const rank = index + 1
         const isCurrentUser = user.id === currentUser.id
-        
+
         if (showCurrentUser && isCurrentUser) return null
-        
+
         return (
           <Card key={user.id} className={`${getRankColor(rank)} ${isCurrentUser ? 'border-2' : ''}`}>
             <CardContent className="p-4">

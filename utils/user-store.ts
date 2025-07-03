@@ -1,4 +1,3 @@
-
 export interface UserData {
   id: string
   name: string
@@ -29,12 +28,11 @@ export interface Submission {
 
 // ユーザーIDを生成
 export function generateUserId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let result = ''
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  // クライアント側でのみランダムID生成
+  if (typeof window === 'undefined') {
+    return '' // サーバー側では空文字を返す
   }
-  return result
+  return Math.random().toString(36).substr(2, 9).toUpperCase()
 }
 
 // 現在のユーザーIDをlocalStorageから取得
@@ -81,7 +79,7 @@ export async function getUser(): Promise<UserData | null> {
     if (!userId) return null
 
     const response = await fetch(`/api/users/${userId}`)
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         // ユーザーが見つからない場合は localStorage をクリア
@@ -92,10 +90,10 @@ export async function getUser(): Promise<UserData | null> {
     }
 
     const user = await response.json()
-    
+
     // 最後のログイン時間を更新
     await updateLastLogin(userId)
-    
+
     return user
   } catch (error) {
     console.error('Error fetching user:', error)
@@ -176,7 +174,7 @@ export async function getFriends(): Promise<Friend[]> {
     if (!userId) return []
 
     const response = await fetch(`/api/friends?userId=${userId}`)
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch friends')
     }
@@ -256,7 +254,7 @@ export async function getSubmissions(): Promise<Submission[]> {
     if (!userId) return []
 
     const response = await fetch(`/api/submissions?userId=${userId}`)
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch submissions')
     }
@@ -272,7 +270,7 @@ export async function getSubmissions(): Promise<Submission[]> {
 export async function getRankingData(): Promise<UserData[]> {
   try {
     const response = await fetch('/api/users')
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch ranking data')
     }

@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [name, setName] = useState("")
-  const [userId, setUserId] = useState(() => generateUserId())
+  const [userId, setUserId] = useState("")
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -32,8 +32,12 @@ export default function RegisterPage() {
           router.push("/profile")
           return
         }
+        // 新規ユーザーの場合はユーザーIDを生成（クライアント側でのみ）
+        setUserId(generateUserId())
       } catch (error) {
         console.error("ユーザーチェックエラー:", error)
+        // エラーが発生してもユーザーIDは生成する
+        setUserId(generateUserId())
       } finally {
         setIsCheckingUser(false)
       }
