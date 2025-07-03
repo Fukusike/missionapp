@@ -42,7 +42,7 @@ export default function RegisterPage() {
         setIsCheckingUser(false)
       }
     }
-    
+
     checkExistingUser()
   }, [router])
 

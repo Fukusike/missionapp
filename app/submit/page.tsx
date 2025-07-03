@@ -22,14 +22,11 @@ export default function SubmitPage() {
   const [assignmentImage, setAssignmentImage] = useState<string | null>(null)
   const [description, setDescription] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(isAnalyzing)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [judgment, setJudgment] = useState<AssignmentJudgment | null>(null)
   const [courses, setCourses] = useState<any[]>([])
-  const [isClient, setIsClient] = useState(false)
-
   useEffect(() => {
-    setIsClient(true)
 
     // ユーザーデータを取得
     const userData = getUser()
