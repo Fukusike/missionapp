@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false)
   const [friendCount, setFriendCount] = useState(0)
   const [isAddingFriend, setIsAddingFriend] = useState(false)
+  const [friends, setFriends] = useState<User[]>([])
 
   useEffect(() => {
     // ユーザーデータを取得
@@ -35,8 +36,12 @@ export default function ProfilePage() {
     setUser(userData)
 
     // 友達の数を取得
-    const friends = getFriends()
-    setFriendCount(friends.length)
+    const friendsList = getFriends()
+    setFriendCount(friendsList.length)
+    
+    // 友達のユーザーデータを取得
+    const friendsData = getFriendsData()
+    setFriends(friendsData)
   }, [router])
 
   const copyUserId = () => {
@@ -89,6 +94,10 @@ export default function ProfilePage() {
       })
       setFriendCount((prev) => prev + 1)
       setFriendId("")
+      
+      // 友達のデータを更新
+      const updatedFriendsData = getFriendsData()
+      setFriends(updatedFriendsData)
     } else {
       toast({
         title: "追加できませんでした",
@@ -268,6 +277,31 @@ export default function ProfilePage() {
                 <div className="mt-2 text-sm text-green-700">
                   <span className="font-medium">{friendCount}人</span>の友達がいます
                 </div>
+                
+                {friends.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="font-medium text-green-700">友達リスト</h4>
+                    <div className="space-y-2">
+                      {friends.map((friend) => (
+                        <div
+                          key={friend.id}
+                          className="flex items-center gap-2 p-2 rounded-lg bg-green-50"
+                        >
+                          <Avatar className="w-6 h-6 border border-green-200">
+                            <AvatarImage src={friend.profileImage || ""} />
+                            <AvatarFallback className="bg-green-50 text-green-800 text-xs">
+                              {friend.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-800">{friend.name}</p>
+                            <p className="text-xs text-green-600">{friend.points}ポイント</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

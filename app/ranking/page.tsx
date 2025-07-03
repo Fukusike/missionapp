@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Home, Medal, Trophy, Users } from "lucide-react"
-import { getUser, getAllRegisteredUsers, getAllMockUsers, getFriendsData, type User } from "@/utils/user-store"
+import { getUser, getAllRegisteredUsers, getAllMockUsers, getFriendsData, getFriends, type User } from "@/utils/user-store"
 
 export default function RankingPage() {
   const router = useRouter()
@@ -59,9 +59,7 @@ export default function RankingPage() {
     const friendsData = getFriendsData()
 
     // 自分のデータも追加
-    if (userData.submissions > 0 || userData.points > 0) {
-      friendsData.push(userData)
-    }
+    friendsData.push(userData)
 
     // ポイント順にソート
     friendsData.sort((a, b) => b.points - a.points)
