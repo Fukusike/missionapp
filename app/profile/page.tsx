@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CheckCircle, Home, Medal, Star, Copy, Check, UserPlus, Users } from "lucide-react"
-import { getUser, getFriends, addFriend, getUserById, type User } from "@/utils/user-store"
+import { getUser, getFriends, addFriend, getUserById, getFriendsData, type User } from "@/utils/user-store"
 import { useToast } from "@/hooks/use-toast"
 import NotificationSettings from "@/components/notification-settings"
 
@@ -23,8 +23,12 @@ export default function ProfilePage() {
   const [friendCount, setFriendCount] = useState(0)
   const [isAddingFriend, setIsAddingFriend] = useState(false)
   const [friends, setFriends] = useState<User[]>([])
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    
+    //
     // ユーザーデータを取得
     const userData = getUser()
     if (!userData) {
@@ -109,8 +113,14 @@ export default function ProfilePage() {
     setIsAddingFriend(false)
   }
 
-  if (!user) {
-    return null // ローディング中
+  if (!isClient || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
+        <div className="container max-w-2xl mx-auto py-4 text-center">
+          <h1 className="text-2xl text-green-800">読み込み中...</h1>
+        </div>
+      </div>
+    )
   }
 
   // 提出履歴のモックデータ

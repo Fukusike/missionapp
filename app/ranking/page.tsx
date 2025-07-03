@@ -16,8 +16,11 @@ export default function RankingPage() {
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [friendUsers, setFriendUsers] = useState<User[]>([])
   const [activeTab, setActiveTab] = useState("all")
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    
     // ユーザーデータを取得
     const userData = getUser()
     if (!userData) {
@@ -80,8 +83,14 @@ export default function RankingPage() {
     }
   }
 
-  if (!user) {
-    return null // ローディング中
+  if (!isClient || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
+        <div className="container max-w-md mx-auto py-4 text-center">
+          <h1 className="text-2xl text-green-800">読み込み中...</h1>
+        </div>
+      </div>
+    )
   }
 
   return (
