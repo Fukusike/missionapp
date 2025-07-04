@@ -1,4 +1,4 @@
-import { Client } from 'pg'
+const { Client } = require('pg')
 
 // データベース接続クライアントを作成
 export async function createClient() {
