@@ -1,5 +1,5 @@
 
-const { createTables, insertMockUsers } = require('../utils/db')
+import { createTables, insertMockUsers } from '../utils/db'
 
 async function initializeDatabase() {
   try {

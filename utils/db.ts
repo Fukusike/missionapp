@@ -1,8 +1,8 @@
 
-const { Client } = require('pg')
+import { Client } from 'pg'
 
 // データベース接続クライアントを作成
-async function createClient() {
+export async function createClient() {
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
   })
@@ -11,7 +11,7 @@ async function createClient() {
 }
 
 // 全テーブルを作成する関数
-async function createTables() {
+export async function createTables() {
   const client = await createClient()
 
   try {
@@ -68,7 +68,7 @@ async function createTables() {
 }
 
 // モックユーザーデータを挿入
-async function insertMockUsers() {
+export async function insertMockUsers() {
   const client = await createClient()
 
   try {
@@ -167,7 +167,15 @@ async function insertMockUsers() {
 // ユーザー操作API関数
 
 // ユーザーを作成/更新
-async function upsertUser(userData) {
+export async function upsertUser(userData: {
+  id: string
+  name: string
+  profileImage?: string | null
+  points?: number
+  submissions?: number
+  badges?: string[]
+  passwordHash?: string
+}) {
   const client = await createClient()
 
   try {
@@ -201,7 +209,7 @@ async function upsertUser(userData) {
 }
 
 // ユーザーを取得
-async function getUser(userId) {
+export async function getUser(userId: string) {
   const client = await createClient()
 
   try {
@@ -213,7 +221,7 @@ async function getUser(userId) {
 }
 
 // 全ユーザーを取得
-async function getAllUsers() {
+export async function getAllUsers() {
   const client = await createClient()
 
   try {
@@ -225,7 +233,7 @@ async function getAllUsers() {
 }
 
 // ユーザーを削除
-async function deleteUser(userId) {
+export async function deleteUser(userId: string) {
   const client = await createClient()
 
   try {
@@ -239,7 +247,7 @@ async function deleteUser(userId) {
 // 友達関係API関数
 
 // 友達を追加
-async function addFriend(userId, friendId) {
+export async function addFriend(userId: string, friendId: string) {
   if (userId === friendId) return false
 
   const client = await createClient()
@@ -266,7 +274,7 @@ async function addFriend(userId, friendId) {
 }
 
 // 友達リストを取得
-async function getFriends(userId) {
+export async function getFriends(userId: string) {
   const client = await createClient()
 
   try {
@@ -285,7 +293,7 @@ async function getFriends(userId) {
 }
 
 // 友達関係を削除
-async function removeFriend(userId, friendId) {
+export async function removeFriend(userId: string, friendId: string) {
   const client = await createClient()
 
   try {
@@ -299,7 +307,13 @@ async function removeFriend(userId, friendId) {
 // 課題提出履歴API関数
 
 // 課題提出を記録
-async function addSubmission(submissionData) {
+export async function addSubmission(submissionData: {
+  userId: string
+  assignmentName: string
+  pointsEarned: number
+  isValid: boolean
+  imageUrl?: string
+}) {
   const client = await createClient()
 
   try {
@@ -331,7 +345,7 @@ async function addSubmission(submissionData) {
 }
 
 // ユーザーの提出履歴を取得
-async function getUserSubmissions(userId) {
+export async function getUserSubmissions(userId: string) {
   const client = await createClient()
 
   try {
@@ -348,7 +362,7 @@ async function getUserSubmissions(userId) {
 }
 
 // 最後のログイン時間を更新
-async function updateLastLogin(userId) {
+export async function updateLastLogin(userId: string) {
   const client = await createClient()
 
   try {
@@ -364,7 +378,7 @@ async function updateLastLogin(userId) {
 }
 
 // ユーザーIDでユーザーを取得（認証用）
-async function getUserForAuth(userId) {
+export async function getUserForAuth(userId: string) {
   const client = await createClient()
 
   try {
@@ -376,7 +390,7 @@ async function getUserForAuth(userId) {
 }
 
 // パスワードハッシュを更新
-async function updatePassword(userId, passwordHash) {
+export async function updatePassword(userId: string, passwordHash: string) {
   const client = await createClient()
 
   try {
@@ -389,23 +403,4 @@ async function updatePassword(userId, passwordHash) {
   } finally {
     await client.end()
   }
-}
-
-// CommonJS exports
-module.exports = {
-  createClient,
-  createTables,
-  insertMockUsers,
-  upsertUser,
-  getUser,
-  getAllUsers,
-  deleteUser,
-  addFriend,
-  getFriends,
-  removeFriend,
-  addSubmission,
-  getUserSubmissions,
-  updateLastLogin,
-  getUserForAuth,
-  updatePassword
 }
