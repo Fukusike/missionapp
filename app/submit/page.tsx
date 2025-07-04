@@ -27,17 +27,19 @@ export default function SubmitPage() {
   const [judgment, setJudgment] = useState<AssignmentJudgment | null>(null)
   const [courses, setCourses] = useState<any[]>([])
   useEffect(() => {
+    // クライアント側でのみ実行
+    if (typeof window !== 'undefined') {
+      // ユーザーデータを取得
+      const userData = getUser()
+      if (!userData) {
+        // ユーザーデータがない場合は登録ページにリダイレクト
+        router.push("/register")
+        return
+      }
 
-    // ユーザーデータを取得
-    const userData = getUser()
-    if (!userData) {
-      // ユーザーデータがない場合は登録ページにリダイレクト
-      router.push("/register")
-      return
+      setUser(userData)
+      setCourses(getCourses())
     }
-
-    setUser(userData)
-    setCourses(getCourses())
   }, [router])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
