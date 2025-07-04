@@ -15,7 +15,7 @@ export async function createTables() {
   const client = await createClient()
 
   try {
-    // ユーザーテーブル（最後のログイン時間を追加）
+    // ユーザーテーブル（パスワードハッシュ列を含む）
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(8) PRIMARY KEY,
@@ -29,6 +29,12 @@ export async function createTables() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `)
+
+    // 既存のテーブルにpassword_hash列が存在しない場合は追加
+    await client.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)
     `)
 
     // 友達関係テーブル
