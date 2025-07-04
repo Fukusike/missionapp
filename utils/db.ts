@@ -1,4 +1,3 @@
-
 import { Client } from 'pg'
 
 // データベース接続クライアントを作成
@@ -13,7 +12,7 @@ export async function createClient() {
 // 全テーブルを作成する関数
 export async function createTables() {
   const client = await createClient()
-  
+
   try {
     // ユーザーテーブル（最後のログイン時間を追加）
     await client.query(`
@@ -30,7 +29,7 @@ export async function createTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
-    
+
     // 友達関係テーブル
     await client.query(`
       CREATE TABLE IF NOT EXISTS friendships (
@@ -57,7 +56,7 @@ export async function createTables() {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `)
-    
+
     console.log('全テーブルが作成されました')
   } catch (error) {
     console.error('テーブル作成エラー:', error)
@@ -70,7 +69,7 @@ export async function createTables() {
 // モックユーザーデータを挿入
 export async function insertMockUsers() {
   const client = await createClient()
-  
+
   try {
     const mockUsers = [
       {
@@ -154,7 +153,7 @@ export async function insertMockUsers() {
         ON CONFLICT (user_id, friend_id) DO NOTHING
       `, [friendship.user_id, friendship.friend_id])
     }
-    
+
     console.log('モックデータが挿入されました')
   } catch (error) {
     console.error('モックデータ挿入エラー:', error)
@@ -177,7 +176,7 @@ export async function upsertUser(userData: {
   passwordHash?: string
 }) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query(`
       INSERT INTO users (id, name, password_hash, profile_image, points, submissions, badges, last_login)
@@ -201,7 +200,7 @@ export async function upsertUser(userData: {
       userData.submissions || 0,
       userData.badges || []
     ])
-    
+
     return result.rows[0]
   } finally {
     await client.end()
@@ -211,7 +210,7 @@ export async function upsertUser(userData: {
 // ユーザーを取得
 export async function getUser(userId: string) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query('SELECT * FROM users WHERE id = $1', [userId])
     return result.rows[0] || null
@@ -223,7 +222,7 @@ export async function getUser(userId: string) {
 // 全ユーザーを取得
 export async function getAllUsers() {
   const client = await createClient()
-  
+
   try {
     const result = await client.query('SELECT * FROM users ORDER BY points DESC')
     return result.rows
@@ -235,7 +234,7 @@ export async function getAllUsers() {
 // ユーザーを削除
 export async function deleteUser(userId: string) {
   const client = await createClient()
-  
+
   try {
     await client.query('DELETE FROM users WHERE id = $1', [userId])
     return true
@@ -251,7 +250,7 @@ export async function addFriend(userId: string, friendId: string) {
   if (userId === friendId) return false
 
   const client = await createClient()
-  
+
   try {
     // 友達が存在するかチェック
     const friendExists = await client.query('SELECT id FROM users WHERE id = $1', [friendId])
@@ -263,7 +262,7 @@ export async function addFriend(userId: string, friendId: string) {
       VALUES ($1, $2)
       ON CONFLICT (user_id, friend_id) DO NOTHING
     `, [userId, friendId])
-    
+
     return true
   } catch (error) {
     console.error('友達追加エラー:', error)
@@ -276,7 +275,7 @@ export async function addFriend(userId: string, friendId: string) {
 // 友達リストを取得
 export async function getFriends(userId: string) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query(`
       SELECT u.*, f.added_at
@@ -285,7 +284,7 @@ export async function getFriends(userId: string) {
       WHERE f.user_id = $1
       ORDER BY f.added_at DESC
     `, [userId])
-    
+
     return result.rows
   } finally {
     await client.end()
@@ -295,7 +294,7 @@ export async function getFriends(userId: string) {
 // 友達関係を削除
 export async function removeFriend(userId: string, friendId: string) {
   const client = await createClient()
-  
+
   try {
     await client.query('DELETE FROM friendships WHERE user_id = $1 AND friend_id = $2', [userId, friendId])
     return true
@@ -315,7 +314,7 @@ export async function addSubmission(submissionData: {
   imageUrl?: string
 }) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query(`
       INSERT INTO submissions (user_id, assignment_name, points_earned, is_valid, image_url)
@@ -337,7 +336,7 @@ export async function addSubmission(submissionData: {
         WHERE id = $2
       `, [submissionData.pointsEarned, submissionData.userId])
     }
-    
+
     return result.rows[0]
   } finally {
     await client.end()
@@ -347,14 +346,14 @@ export async function addSubmission(submissionData: {
 // ユーザーの提出履歴を取得
 export async function getUserSubmissions(userId: string) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query(`
       SELECT * FROM submissions 
       WHERE user_id = $1 
       ORDER BY submitted_at DESC
     `, [userId])
-    
+
     return result.rows
   } finally {
     await client.end()
@@ -364,7 +363,7 @@ export async function getUserSubmissions(userId: string) {
 // 最後のログイン時間を更新
 export async function updateLastLogin(userId: string) {
   const client = await createClient()
-  
+
   try {
     await client.query(`
       UPDATE users 
@@ -380,7 +379,7 @@ export async function updateLastLogin(userId: string) {
 // ユーザーIDでユーザーを取得（認証用）
 export async function getUserForAuth(userId: string) {
   const client = await createClient()
-  
+
   try {
     const result = await client.query('SELECT id, name, password_hash FROM users WHERE id = $1', [userId])
     return result.rows[0] || null
@@ -392,7 +391,7 @@ export async function getUserForAuth(userId: string) {
 // パスワードハッシュを更新
 export async function updatePassword(userId: string, passwordHash: string) {
   const client = await createClient()
-  
+
   try {
     await client.query(`
       UPDATE users 
@@ -403,4 +402,23 @@ export async function updatePassword(userId: string, passwordHash: string) {
   } finally {
     await client.end()
   }
+}
+
+// CommonJS exports
+module.exports = {
+  createClient,
+  createTables,
+  insertMockUsers,
+  upsertUser,
+  getUser,
+  getAllUsers,
+  deleteUser,
+  addFriend,
+  getFriends,
+  removeFriend,
+  addSubmission,
+  getUserSubmissions,
+  updateLastLogin,
+  getUserForAuth,
+  updatePassword
 }
