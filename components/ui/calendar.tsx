@@ -23,7 +23,7 @@ function Calendar({
   }, [])
 
   if (!isMounted) {
-    return <div className="p-3 h-64 w-full bg-gray-50 animate-pulse rounded" />
+    return null
   }
 
   return (

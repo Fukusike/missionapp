@@ -30,23 +30,18 @@ export default function SubmitPage() {
 
   useEffect(() => {
     setIsMounted(true)
-  }, [])
-
-  useEffect(() => {
-    // クライアント側でのみ実行
-    if (isMounted && typeof window !== 'undefined') {
-      // ユーザーデータを取得
-      const userData = getUser()
-      if (!userData) {
-        // ユーザーデータがない場合は登録ページにリダイレクト
-        router.push("/register")
-        return
-      }
-
-      setUser(userData)
-      setCourses(getCourses())
+    
+    // ユーザーデータを取得
+    const userData = getUser()
+    if (!userData) {
+      // ユーザーデータがない場合は登録ページにリダイレクト
+      router.push("/register")
+      return
     }
-  }, [isMounted, router])
+
+    setUser(userData)
+    setCourses(getCourses())
+  }, [router])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
