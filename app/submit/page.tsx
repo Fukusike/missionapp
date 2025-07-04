@@ -30,6 +30,10 @@ export default function SubmitPage() {
 
   useEffect(() => {
     setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
     
     // ユーザーデータを取得
     const userData = getUser()
@@ -41,7 +45,7 @@ export default function SubmitPage() {
 
     setUser(userData)
     setCourses(getCourses())
-  }, [router])
+  }, [router, isMounted])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

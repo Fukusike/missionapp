@@ -22,6 +22,10 @@ export default function RankingPage() {
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
 
     const loadData = async () => {
       try {
@@ -54,7 +58,7 @@ export default function RankingPage() {
     }
 
     loadData()
-  }, [router, toast])
+  }, [router, toast, isClient])
 
   if (!isClient || isLoading) {
     return (

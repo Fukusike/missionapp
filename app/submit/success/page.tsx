@@ -50,7 +50,7 @@ export default function SuccessPage() {
     }
 
     loadAndRunConfetti()
-  }, [])
+  }, [isClient])
 
   if (!isClient) {
     return (
