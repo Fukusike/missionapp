@@ -1,6 +1,7 @@
 export interface UserData {
   id: string
   name: string
+  email?: string | null
   profileImage?: string | null
   points: number
   submissions: number
