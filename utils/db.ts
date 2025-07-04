@@ -43,6 +43,23 @@ export async function createTables() {
       ALTER COLUMN id TYPE VARCHAR(50)
     `)
 
+    // 既存のfriendshipsテーブルの外部キー列のサイズを拡張
+    await client.query(`
+      ALTER TABLE friendships 
+      ALTER COLUMN user_id TYPE VARCHAR(50)
+    `)
+
+    await client.query(`
+      ALTER TABLE friendships 
+      ALTER COLUMN friend_id TYPE VARCHAR(50)
+    `)
+
+    // 既存のsubmissionsテーブルの外部キー列のサイズを拡張
+    await client.query(`
+      ALTER TABLE submissions 
+      ALTER COLUMN user_id TYPE VARCHAR(50)
+    `)
+
     // 友達関係テーブル
     await client.query(`
       CREATE TABLE IF NOT EXISTS friendships (
