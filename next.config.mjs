@@ -11,8 +11,7 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  reactStrictMode: false,
-  swcMinify: true
+  reactStrictMode: false
 }
 
 export default nextConfig
