@@ -15,15 +15,18 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true)
     // ユーザーデータをチェック（リダイレクトはしない）
-    const userData = getUser()
-    setUser(userData)
+    const loadUser = async () => {
+      const userData = await getUser()
+      setUser(userData)
+    }
+    loadUser()
   }, [])
 
   // ユーザー登録状態をチェックしてナビゲートする関数
-  const navigateWithUserCheck = (path: string) => {
+  const navigateWithUserCheck = async (path: string) => {
     if (!isClient) return
     
-    const userData = getUser()
+    const userData = await getUser()
     if (!userData) {
       // ユーザーデータがない場合は登録ページにリダイレクト
       router.push("/register")

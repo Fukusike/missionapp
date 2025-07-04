@@ -36,15 +36,19 @@ export default function SubmitPage() {
     if (!isMounted) return
     
     // ユーザーデータを取得
-    const userData = getUser()
-    if (!userData) {
-      // ユーザーデータがない場合は登録ページにリダイレクト
-      router.push("/register")
-      return
-    }
+    const loadUserData = async () => {
+      const userData = await getUser()
+      if (!userData) {
+        // ユーザーデータがない場合は登録ページにリダイレクト
+        router.push("/register")
+        return
+      }
 
-    setUser(userData)
-    setCourses(getCourses())
+      setUser(userData)
+      setCourses(getCourses())
+    }
+    
+    loadUserData()
   }, [router, isMounted])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
