@@ -65,11 +65,12 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "latest",
+    "ts-node": "^10.9.2",
     "vaul": "latest",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "^22.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",
