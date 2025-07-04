@@ -26,9 +26,15 @@ export default function SubmitPage() {
   const [user, setUser] = useState<any>(null)
   const [judgment, setJudgment] = useState<AssignmentJudgment | null>(null)
   const [courses, setCourses] = useState<any[]>([])
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   useEffect(() => {
     // クライアント側でのみ実行
-    if (typeof window !== 'undefined') {
+    if (isMounted && typeof window !== 'undefined') {
       // ユーザーデータを取得
       const userData = getUser()
       if (!userData) {
@@ -40,7 +46,7 @@ export default function SubmitPage() {
       setUser(userData)
       setCourses(getCourses())
     }
-  }, [router])
+  }, [isMounted, router])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -174,7 +180,7 @@ export default function SubmitPage() {
     setJudgment(null)
   }
 
-  if (!user) {
+  if (!isMounted || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-4">
         <div className="container max-w-2xl mx-auto py-8 text-center">
