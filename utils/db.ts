@@ -18,7 +18,7 @@ export async function createTables() {
     // ユーザーテーブル（パスワードハッシュ列を含む）
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(8) PRIMARY KEY,
+        id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         password_hash VARCHAR(255),
         profile_image TEXT,
@@ -37,12 +37,18 @@ export async function createTables() {
       ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)
     `)
 
+    // 既存のid列の文字数制限を拡張
+    await client.query(`
+      ALTER TABLE users 
+      ALTER COLUMN id TYPE VARCHAR(50)
+    `)
+
     // 友達関係テーブル
     await client.query(`
       CREATE TABLE IF NOT EXISTS friendships (
         id SERIAL PRIMARY KEY,
-        user_id VARCHAR(8) NOT NULL,
-        friend_id VARCHAR(8) NOT NULL,
+        user_id VARCHAR(50) NOT NULL,
+        friend_id VARCHAR(50) NOT NULL,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -54,7 +60,7 @@ export async function createTables() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS submissions (
         id SERIAL PRIMARY KEY,
-        user_id VARCHAR(8) NOT NULL,
+        user_id VARCHAR(50) NOT NULL,
         assignment_name VARCHAR(255) NOT NULL,
         points_earned INTEGER DEFAULT 0,
         submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
