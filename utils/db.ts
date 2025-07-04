@@ -1,7 +1,8 @@
+
 const { Client } = require('pg')
 
 // データベース接続クライアントを作成
-export async function createClient() {
+async function createClient() {
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
   })
@@ -10,7 +11,7 @@ export async function createClient() {
 }
 
 // 全テーブルを作成する関数
-export async function createTables() {
+async function createTables() {
   const client = await createClient()
 
   try {
@@ -67,7 +68,7 @@ export async function createTables() {
 }
 
 // モックユーザーデータを挿入
-export async function insertMockUsers() {
+async function insertMockUsers() {
   const client = await createClient()
 
   try {
@@ -166,15 +167,7 @@ export async function insertMockUsers() {
 // ユーザー操作API関数
 
 // ユーザーを作成/更新
-export async function upsertUser(userData: {
-  id: string
-  name: string
-  profileImage?: string | null
-  points?: number
-  submissions?: number
-  badges?: string[]
-  passwordHash?: string
-}) {
+async function upsertUser(userData) {
   const client = await createClient()
 
   try {
@@ -208,7 +201,7 @@ export async function upsertUser(userData: {
 }
 
 // ユーザーを取得
-export async function getUser(userId: string) {
+async function getUser(userId) {
   const client = await createClient()
 
   try {
@@ -220,7 +213,7 @@ export async function getUser(userId: string) {
 }
 
 // 全ユーザーを取得
-export async function getAllUsers() {
+async function getAllUsers() {
   const client = await createClient()
 
   try {
@@ -232,7 +225,7 @@ export async function getAllUsers() {
 }
 
 // ユーザーを削除
-export async function deleteUser(userId: string) {
+async function deleteUser(userId) {
   const client = await createClient()
 
   try {
@@ -246,7 +239,7 @@ export async function deleteUser(userId: string) {
 // 友達関係API関数
 
 // 友達を追加
-export async function addFriend(userId: string, friendId: string) {
+async function addFriend(userId, friendId) {
   if (userId === friendId) return false
 
   const client = await createClient()
@@ -273,7 +266,7 @@ export async function addFriend(userId: string, friendId: string) {
 }
 
 // 友達リストを取得
-export async function getFriends(userId: string) {
+async function getFriends(userId) {
   const client = await createClient()
 
   try {
@@ -292,7 +285,7 @@ export async function getFriends(userId: string) {
 }
 
 // 友達関係を削除
-export async function removeFriend(userId: string, friendId: string) {
+async function removeFriend(userId, friendId) {
   const client = await createClient()
 
   try {
@@ -306,13 +299,7 @@ export async function removeFriend(userId: string, friendId: string) {
 // 課題提出履歴API関数
 
 // 課題提出を記録
-export async function addSubmission(submissionData: {
-  userId: string
-  assignmentName: string
-  pointsEarned: number
-  isValid: boolean
-  imageUrl?: string
-}) {
+async function addSubmission(submissionData) {
   const client = await createClient()
 
   try {
@@ -344,7 +331,7 @@ export async function addSubmission(submissionData: {
 }
 
 // ユーザーの提出履歴を取得
-export async function getUserSubmissions(userId: string) {
+async function getUserSubmissions(userId) {
   const client = await createClient()
 
   try {
@@ -361,7 +348,7 @@ export async function getUserSubmissions(userId: string) {
 }
 
 // 最後のログイン時間を更新
-export async function updateLastLogin(userId: string) {
+async function updateLastLogin(userId) {
   const client = await createClient()
 
   try {
@@ -377,7 +364,7 @@ export async function updateLastLogin(userId: string) {
 }
 
 // ユーザーIDでユーザーを取得（認証用）
-export async function getUserForAuth(userId: string) {
+async function getUserForAuth(userId) {
   const client = await createClient()
 
   try {
@@ -389,7 +376,7 @@ export async function getUserForAuth(userId: string) {
 }
 
 // パスワードハッシュを更新
-export async function updatePassword(userId: string, passwordHash: string) {
+async function updatePassword(userId, passwordHash) {
   const client = await createClient()
 
   try {
