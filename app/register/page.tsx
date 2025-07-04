@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload, Copy, Check } from "lucide-react"
+import { Upload, Copy, Check, Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
 import { generateUserId, saveUser, getUser } from "@/utils/user-store"
 import { useToast } from "@/hooks/use-toast"
 
@@ -17,6 +18,10 @@ export default function RegisterPage() {
   const { toast } = useToast()
   const [name, setName] = useState("")
   const [userId, setUserId] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -92,12 +97,31 @@ export default function RegisterPage() {
       return
     }
 
+    if (!password || password.length < 8) {
+      toast({
+        title: "エラー",
+        description: "パスワードは8文字以上で入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "エラー",
+        description: "パスワードが一致しません",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     // ユーザーデータを保存
     const userData = {
       id: userId,
       name: name.trim(),
+      password: password,
       profileImage: profileImage,
       points: 0,
       submissions: 0,
@@ -165,6 +189,66 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="password" className="text-green-700">
+                パスワード
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="8文字以上のパスワードを入力"
+                  required
+                  className="border-green-200 focus-visible:ring-green-500 pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-green-600" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-green-700">
+                パスワード確認
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="パスワードを再入力"
+                  required
+                  className="border-green-200 focus-visible:ring-green-500 pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-green-600" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="profile-image" className="text-green-700">
                 プロフィール画像
               </Label>
@@ -196,14 +280,22 @@ export default function RegisterPage() {
             </div>
           </form>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col space-y-4">
           <Button
             onClick={handleSubmit}
-            disabled={!name || isLoading}
+            disabled={!name || !password || !confirmPassword || isLoading}
             className="w-full bg-green-500 hover:bg-green-600"
           >
             {isLoading ? "登録中..." : "登録する"}
           </Button>
+          
+          <div className="text-center text-sm text-green-600">
+            すでにアカウントをお持ちの方は{" "}
+            <Link href="/login" className="text-green-700 hover:underline font-medium">
+              こちら
+            </Link>
+            {" "}からログイン
+          </div>
         </CardFooter>
       </Card>
     </div>

@@ -20,6 +20,7 @@ export async function createTables() {
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(8) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
+        password_hash VARCHAR(255),
         profile_image TEXT,
         points INTEGER DEFAULT 0,
         submissions INTEGER DEFAULT 0,
@@ -173,15 +174,17 @@ export async function upsertUser(userData: {
   points?: number
   submissions?: number
   badges?: string[]
+  passwordHash?: string
 }) {
   const client = await createClient()
   
   try {
     const result = await client.query(`
-      INSERT INTO users (id, name, profile_image, points, submissions, badges, last_login)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO users (id, name, password_hash, profile_image, points, submissions, badges, last_login)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
+        password_hash = COALESCE(EXCLUDED.password_hash, users.password_hash),
         profile_image = EXCLUDED.profile_image,
         points = EXCLUDED.points,
         submissions = EXCLUDED.submissions,
@@ -192,6 +195,7 @@ export async function upsertUser(userData: {
     `, [
       userData.id,
       userData.name,
+      userData.passwordHash || null,
       userData.profileImage || null,
       userData.points || 0,
       userData.submissions || 0,
@@ -367,6 +371,34 @@ export async function updateLastLogin(userId: string) {
       SET last_login = NOW(), updated_at = NOW()
       WHERE id = $1
     `, [userId])
+    return true
+  } finally {
+    await client.end()
+  }
+}
+
+// ユーザーIDでユーザーを取得（認証用）
+export async function getUserForAuth(userId: string) {
+  const client = await createClient()
+  
+  try {
+    const result = await client.query('SELECT id, name, password_hash FROM users WHERE id = $1', [userId])
+    return result.rows[0] || null
+  } finally {
+    await client.end()
+  }
+}
+
+// パスワードハッシュを更新
+export async function updatePassword(userId: string, passwordHash: string) {
+  const client = await createClient()
+  
+  try {
+    await client.query(`
+      UPDATE users 
+      SET password_hash = $1, updated_at = NOW()
+      WHERE id = $2
+    `, [passwordHash, userId])
     return true
   } finally {
     await client.end()
