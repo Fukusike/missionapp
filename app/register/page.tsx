@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
   const [userId, setUserId] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -97,6 +98,26 @@ export default function RegisterPage() {
       return
     }
 
+    if (!email || email.trim() === "") {
+      toast({
+        title: "エラー",
+        description: "メールアドレスを入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 簡単なメールアドレス形式チェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      toast({
+        title: "エラー",
+        description: "正しいメールアドレス形式で入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (!password || password.length < 8) {
       toast({
         title: "エラー",
@@ -121,6 +142,7 @@ export default function RegisterPage() {
     const userData = {
       id: userId,
       name: name.trim(),
+      email: email.trim(),
       password: password,
       profileImage: profileImage,
       points: 0,
@@ -162,6 +184,21 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ニックネームを入力"
+                required
+                className="border-green-200 focus-visible:ring-green-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-green-700">
+                メールアドレス
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="メールアドレスを入力"
                 required
                 className="border-green-200 focus-visible:ring-green-500"
               />
@@ -283,7 +320,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col space-y-4">
           <Button
             onClick={handleSubmit}
-            disabled={!name || !password || !confirmPassword || isLoading}
+            disabled={!name || !email || !password || !confirmPassword || isLoading}
             className="w-full bg-green-500 hover:bg-green-600"
           >
             {isLoading ? "登録中..." : "登録する"}

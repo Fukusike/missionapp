@@ -20,6 +20,7 @@ export async function createTables() {
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
+        email VARCHAR(255),
         password_hash VARCHAR(255),
         profile_image TEXT,
         points INTEGER DEFAULT 0,
@@ -35,6 +36,12 @@ export async function createTables() {
     await client.query(`
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)
+    `)
+
+    // 既存のテーブルにemail列が存在しない場合は追加
+    await client.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS email VARCHAR(255)
     `)
 
     // 既存のid列の文字数制限を拡張
@@ -199,6 +206,7 @@ export async function insertMockUsers() {
 export async function upsertUser(userData: {
   id: string
   name: string
+  email?: string | null
   profileImage?: string | null
   points?: number
   submissions?: number
@@ -209,10 +217,11 @@ export async function upsertUser(userData: {
 
   try {
     const result = await client.query(`
-      INSERT INTO users (id, name, password_hash, profile_image, points, submissions, badges, last_login)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      INSERT INTO users (id, name, email, password_hash, profile_image, points, submissions, badges, last_login)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
+        email = EXCLUDED.email,
         password_hash = COALESCE(EXCLUDED.password_hash, users.password_hash),
         profile_image = EXCLUDED.profile_image,
         points = EXCLUDED.points,
@@ -224,6 +233,7 @@ export async function upsertUser(userData: {
     `, [
       userData.id,
       userData.name,
+      userData.email || null,
       userData.passwordHash || null,
       userData.profileImage || null,
       userData.points || 0,

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     const user = await upsertUser({
       id: userData.id,
       name: userData.name,
+      email: userData.email,
       profileImage: userData.profileImage,
       points: userData.points,
       submissions: userData.submissions,

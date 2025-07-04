@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddFriendDialogOpen, setIsAddFriendDialogOpen] = useState(false)
   const [editedName, setEditedName] = useState("")
+  const [editedEmail, setEditedEmail] = useState("")
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [friendId, setFriendId] = useState("")
   const [copied, setCopied] = useState(false)
@@ -39,6 +40,7 @@ export default function ProfilePage() {
         }
         setUser(userData)
         setEditedName(userData.name)
+        setEditedEmail(userData.email || "")
         setProfileImage(userData.profileImage || null)
       } catch (error) {
         console.error('Error loading user:', error)
@@ -103,9 +105,30 @@ export default function ProfilePage() {
       return
     }
 
+    if (!editedEmail.trim()) {
+      toast({
+        title: "エラー",
+        description: "メールアドレスを入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 簡単なメールアドレス形式チェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(editedEmail.trim())) {
+      toast({
+        title: "エラー",
+        description: "正しいメールアドレス形式で入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       const updatedUser = await updateUser({
         name: editedName.trim(),
+        email: editedEmail.trim(),
         profileImage: profileImage,
       })
 
@@ -202,7 +225,10 @@ export default function ProfilePage() {
               </Avatar>
             </div>
             <CardTitle className="text-2xl text-green-800">{user.name}</CardTitle>
-            <CardDescription className="text-green-600">ID: {user.id}</CardDescription>
+            <CardDescription className="text-green-600">
+              ID: {user.id}
+              {user.email && <><br />Email: {user.email}</>}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4 text-center">
@@ -261,6 +287,16 @@ export default function ProfilePage() {
                         id="edit-name"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
+                        className="border-green-200"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-email">メールアドレス</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editedEmail}
+                        onChange={(e) => setEditedEmail(e.target.value)}
                         className="border-green-200"
                       />
                     </div>
