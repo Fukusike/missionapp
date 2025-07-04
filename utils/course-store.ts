@@ -129,7 +129,7 @@ export function judgeAssignment(detectedText: string, normalizedText?: string): 
 
   let keywordMatches = 0
   assignmentKeywords.forEach((keyword) => {
-    if (normalizedText.includes(keyword.toLowerCase())) {
+    if (textToAnalyze.includes(keyword.toLowerCase())) {
       keywordMatches++
       confidence += 10 // キーワードマッチで10ポイント
     }
