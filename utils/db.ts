@@ -240,6 +240,10 @@ export async function upsertUser(userData: {
   const client = await createClient()
 
   try {
+    // 必須フィールドのバリデーション
+    if (!userData.id || !userData.name) {
+      throw new Error('IDと名前は必須です')
+    }
     const result = await client.query(`
       INSERT INTO users (id, name, email, password_hash, profile_image, points, submissions, badges, last_login)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())

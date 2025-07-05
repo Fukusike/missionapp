@@ -48,15 +48,24 @@ export async function PUT(
       )
     }
     
-    // ユーザー情報を更新
+    // 既存のユーザー情報を取得
+    const existingUser = await getUser(id)
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'ユーザーが見つかりません' },
+        { status: 404 }
+      )
+    }
+
+    // ユーザー情報を更新（既存の値を保持）
     const updatedUser = await upsertUser({
       id,
-      name: userData.name,
-      email: userData.email,
-      profileImage: userData.profileImage,
-      points: userData.points,
-      submissions: userData.submissions,
-      badges: userData.badges
+      name: userData.name || existingUser.name,
+      email: userData.email !== undefined ? userData.email : existingUser.email,
+      profileImage: userData.profileImage !== undefined ? userData.profileImage : existingUser.profileImage,
+      points: userData.points !== undefined ? userData.points : existingUser.points,
+      submissions: userData.submissions !== undefined ? userData.submissions : existingUser.submissions,
+      badges: userData.badges || existingUser.badges
     })
     
     return NextResponse.json(updatedUser)
