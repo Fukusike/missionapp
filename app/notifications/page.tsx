@@ -1,16 +1,76 @@
 
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bell, Users, Check, Trash2 } from 'lucide-react'
+import { Bell, Users, Check, Trash2, UserCheck } from 'lucide-react'
 import { useNotificationStore } from '@/utils/notification-store'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { useToast } from '@/hooks/use-toast'
+import { getCurrentUserId } from '@/utils/user-store'
 import Link from 'next/link'
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead, removeNotification, unreadCount } = useNotificationStore()
+  const { toast } = useToast()
+  const [selectedNotification, setSelectedNotification] = useState<any>(null)
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId())
+  }, [])
+
+  const handleNotificationClick = (notification: any) => {
+    if (notification.type === 'friend_request' && !notification.isRead) {
+      setSelectedNotification(notification)
+      setIsApprovalDialogOpen(true)
+    }
+    
+    if (!notification.isRead) {
+      markAsRead(notification.id)
+    }
+  }
+
+  const handleApproveFriendRequest = async () => {
+    if (!selectedNotification || !currentUserId) return
+
+    setIsApproving(true)
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          requesterId: selectedNotification.fromUserId,
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "友達申請を承認しました",
+          description: `${selectedNotification.fromUserName}さんと友達になりました`,
+        })
+        setIsApprovalDialogOpen(false)
+        setSelectedNotification(null)
+      } else {
+        throw new Error('承認に失敗しました')
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "友達申請の承認に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsApproving(false)
+    }
+  }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -93,8 +153,9 @@ export default function NotificationsPage() {
               <Card 
                 key={notification.id} 
                 className={`transition-all hover:shadow-md border-l-4 ${getNotificationColor(notification.type)} ${
-                  !notification.isRead ? 'bg-blue-50/50' : ''
-                }`}
+                  !notification.isRead ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/30'
+                } ${notification.type === 'friend_request' && !notification.isRead ? 'cursor-pointer hover:bg-blue-100/50' : ''}`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
@@ -104,7 +165,7 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-800">
+                          <h3 className={`font-semibold ${!notification.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
                             {notification.title}
                           </h3>
                           {!notification.isRead && (
@@ -112,8 +173,13 @@ export default function NotificationsPage() {
                               未読
                             </Badge>
                           )}
+                          {notification.type === 'friend_request' && !notification.isRead && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              クリックして承認
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-gray-600 mb-2">
+                        <p className={`mb-2 ${!notification.isRead ? 'text-gray-700' : 'text-gray-500'}`}>
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -130,7 +196,7 @@ export default function NotificationsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {!notification.isRead && (
                         <Button
                           onClick={() => markAsRead(notification.id)}
@@ -155,6 +221,39 @@ export default function NotificationsPage() {
             ))
           )}
         </div>
+
+        {/* 友達申請承認ダイアログ */}
+        <AlertDialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-blue-500" />
+                友達申請の承認
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {selectedNotification && (
+                  <span>
+                    <strong>{selectedNotification.fromUserName}</strong>さんからの友達申請を承認しますか？
+                    <br />
+                    承認すると、お互いのランキングで友達として表示されるようになります。
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isApproving}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleApproveFriendRequest}
+                disabled={isApproving}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                {isApproving ? '承認中...' : '承認する'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

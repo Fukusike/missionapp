@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getFriends, addFriend, removeFriend, getUser } from '@/utils/db'
+import { getFriends, addFriend, removeFriend, getUser, createNotification, approveFriendRequest, getFriendRequest } from '@/utils/db'
 
 // GET: 友達リストを取得
 export async function GET(request: NextRequest) {
@@ -38,54 +38,92 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const success = await addFriend(userId, friendId)
-
-    if (!success) {
-      return NextResponse.json(
-        { error: '友達の追加に失敗しました' },
-        { status: 400 }
-      )
-    }
-
-    // 通知情報を取得
-    const requesterUser = await getUser(userId)
-    const targetUser = await getUser(friendId)
-
     if (type === 'request') {
-      // 友達申請の通知
-      return NextResponse.json({ 
-        message: '友達申請を送信しました',
-        notification: {
-          type: 'friend_request',
-          title: '友達申請が届きました',
-          message: `${requesterUser?.name || 'ユーザー'}さんから友達申請が届きました`,
-          fromUserId: userId,
-          fromUserName: requesterUser?.name || 'ユーザー',
-          targetUserId: friendId,
-          isRead: false
-        }
+      const success = await addFriend(userId, friendId)
+
+      if (!success) {
+        return NextResponse.json(
+          { error: '友達申請の送信に失敗しました' },
+          { status: 400 }
+        )
+      }
+
+      // 通知情報を取得
+      const requesterUser = await getUser(userId)
+
+      // 友達申請の通知を作成
+      await createNotification({
+        userId: friendId,
+        type: 'friend_request',
+        title: '友達申請',
+        message: `${requesterUser?.name || 'ユーザー'}さんから友達申請が届いています`,
+        fromUserId: userId,
+        fromUserName: requesterUser?.name || 'ユーザー'
       })
-    } else if (type === 'accept') {
-      // 友達申請承認の通知
+
       return NextResponse.json({ 
-        message: '友達申請を承認しました',
-        notification: {
-          type: 'friend_accepted',
-          title: '友達申請が承認されました',
-          message: `${targetUser?.name || 'ユーザー'}さんがあなたの友達申請を承認しました`,
-          fromUserId: friendId,
-          fromUserName: targetUser?.name || 'ユーザー',
-          targetUserId: userId,
-          isRead: false
-        }
+        message: '友達申請を送信しました'
       })
     }
 
-    return NextResponse.json({ message: '友達が追加されました' })
+    return NextResponse.json({ message: '不正なリクエストです' }, { status: 400 })
   } catch (error) {
     console.error('友達追加エラー:', error)
     return NextResponse.json(
       { error: '友達の追加に失敗しました' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: 友達申請を承認
+export async function PUT(request: NextRequest) {
+  try {
+    const { userId, requesterId } = await request.json()
+
+    if (!userId || !requesterId) {
+      return NextResponse.json(
+        { error: 'ユーザーIDと申請者IDが必要です' },
+        { status: 400 }
+      )
+    }
+
+    // 友達申請が存在するかチェック
+    const friendRequest = await getFriendRequest(userId, requesterId)
+    if (!friendRequest) {
+      return NextResponse.json(
+        { error: '友達申請が見つかりません' },
+        { status: 404 }
+      )
+    }
+
+    const success = await approveFriendRequest(userId, requesterId)
+
+    if (!success) {
+      return NextResponse.json(
+        { error: '友達申請の承認に失敗しました' },
+        { status: 400 }
+      )
+    }
+
+    // 申請者に承認通知を送信
+    const approverUser = await getUser(userId)
+    await createNotification({
+      userId: requesterId,
+      type: 'friend_accepted',
+      title: '友達申請承認',
+      message: `${approverUser?.name || 'ユーザー'}さんがあなたの友達申請を承認しました`,
+      fromUserId: userId,
+      fromUserName: approverUser?.name || 'ユーザー'
+    })
+
+    return NextResponse.json({ 
+      message: '友達申請を承認しました'
+    })
+  } catch (error) {
+    console.error('友達申請承認エラー:', error)
+    return NextResponse.json(
+      { error: '友達申請の承認に失敗しました' },
       { status: 500 }
     )
   }

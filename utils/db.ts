@@ -73,11 +73,18 @@ export async function createTables() {
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
         friend_id VARCHAR(50) NOT NULL,
+        is_approved BOOLEAN DEFAULT false,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
         UNIQUE(user_id, friend_id)
       )
+    `)
+
+    // 既存のfriendshipsテーブルにis_approved列を追加
+    await client.query(`
+      ALTER TABLE friendships 
+      ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT false
     `)
 
     // 課題提出履歴テーブル
@@ -302,7 +309,7 @@ export async function deleteUser(userId: string) {
 
 // 友達関係API関数
 
-// 友達を追加
+// 友達を追加（友達申請として）
 export async function addFriend(userId: string, friendId: string) {
   if (userId === friendId) return false
 
@@ -313,11 +320,18 @@ export async function addFriend(userId: string, friendId: string) {
     const friendExists = await client.query('SELECT id FROM users WHERE id = $1', [friendId])
     if (friendExists.rows.length === 0) return false
 
-    // 友達関係を追加
+    // 既存の友達関係をチェック
+    const existingFriendship = await client.query(`
+      SELECT * FROM friendships 
+      WHERE user_id = $1 AND friend_id = $2
+    `, [userId, friendId])
+
+    if (existingFriendship.rows.length > 0) return false
+
+    // 友達申請を追加（未承認状態）
     await client.query(`
-      INSERT INTO friendships (user_id, friend_id)
-      VALUES ($1, $2)
-      ON CONFLICT (user_id, friend_id) DO NOTHING
+      INSERT INTO friendships (user_id, friend_id, is_approved)
+      VALUES ($1, $2, false)
     `, [userId, friendId])
 
     return true
@@ -329,7 +343,7 @@ export async function addFriend(userId: string, friendId: string) {
   }
 }
 
-// 友達リストを取得
+// 友達リストを取得（承認済みのみ）
 export async function getFriends(userId: string) {
   const client = await createClient()
 
@@ -338,7 +352,7 @@ export async function getFriends(userId: string) {
       SELECT u.*, f.added_at
       FROM users u
       JOIN friendships f ON u.id = f.friend_id
-      WHERE f.user_id = $1
+      WHERE f.user_id = $1 AND f.is_approved = true
       ORDER BY f.added_at DESC
     `, [userId])
 
@@ -566,6 +580,50 @@ export async function getUnreadNotificationCount(userId: string) {
     `, [userId])
 
     return parseInt(result.rows[0].count)
+  } finally {
+    await client.end()
+  }
+}
+
+// 友達申請を承認
+export async function approveFriendRequest(userId: string, requesterId: string) {
+  const client = await createClient()
+
+  try {
+    // 友達申請を承認
+    await client.query(`
+      UPDATE friendships 
+      SET is_approved = true 
+      WHERE user_id = $1 AND friend_id = $2
+    `, [requesterId, userId])
+
+    // 逆方向の友達関係も作成（相互フォロー）
+    await client.query(`
+      INSERT INTO friendships (user_id, friend_id, is_approved)
+      VALUES ($1, $2, true)
+      ON CONFLICT (user_id, friend_id) DO UPDATE SET is_approved = true
+    `, [userId, requesterId])
+
+    return true
+  } catch (error) {
+    console.error('友達申請承認エラー:', error)
+    return false
+  } finally {
+    await client.end()
+  }
+}
+
+// 友達申請を取得
+export async function getFriendRequest(userId: string, requesterId: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT * FROM friendships 
+      WHERE user_id = $1 AND friend_id = $2 AND is_approved = false
+    `, [requesterId, userId])
+
+    return result.rows[0] || null
   } finally {
     await client.end()
   }
