@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUser, deleteUser, updateLastLogin } from '@/utils/db'
+import { getUser, deleteUser, updateLastLogin, upsertUser } from '@/utils/db'
 
 // GET: 特定ユーザーを取得
 export async function GET(
@@ -26,6 +26,44 @@ export async function GET(
     console.error('ユーザー取得エラー:', error)
     return NextResponse.json(
       { error: 'ユーザーの取得に失敗しました' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: ユーザー情報を更新
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const userData = await request.json()
+    
+    // IDが一致しているかチェック
+    if (userData.id && userData.id !== id) {
+      return NextResponse.json(
+        { error: 'URLのIDとデータのIDが一致しません' },
+        { status: 400 }
+      )
+    }
+    
+    // ユーザー情報を更新
+    const updatedUser = await upsertUser({
+      id,
+      name: userData.name,
+      email: userData.email,
+      profileImage: userData.profileImage,
+      points: userData.points,
+      submissions: userData.submissions,
+      badges: userData.badges
+    })
+    
+    return NextResponse.json(updatedUser)
+  } catch (error) {
+    console.error('ユーザー更新エラー:', error)
+    return NextResponse.json(
+      { error: 'ユーザーの更新に失敗しました' },
       { status: 500 }
     )
   }
