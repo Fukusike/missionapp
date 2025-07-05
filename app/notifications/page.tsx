@@ -45,9 +45,12 @@ export default function NotificationsPage() {
               {unreadCount > 0 ? `${unreadCount}件の未読通知があります` : 'すべての通知を確認済みです'}
             </p>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline">ダッシュボードに戻る</Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            onClick={() => window.history.back()}
+          >
+            前の画面に戻る
+          </Button>
         </div>
 
         {/* アクションボタン */}
