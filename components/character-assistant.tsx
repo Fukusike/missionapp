@@ -30,10 +30,15 @@ export default function CharacterAssistant({
   const [isCustomizing, setIsCustomizing] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Auto-cycle through messages
   useEffect(() => {
-    if (!isCustomizing) {
+    if (!isCustomizing && isMounted) {
       const interval = setInterval(() => {
         const randomMessage = defaultMessages[Math.floor(Math.random() * defaultMessages.length)]
         setCurrentMessage(randomMessage)
@@ -43,7 +48,7 @@ export default function CharacterAssistant({
 
       return () => clearInterval(interval)
     }
-  }, [isCustomizing])
+  }, [isCustomizing, isMounted])
 
   const handlePlayVoice = () => {
     if ("speechSynthesis" in window) {
@@ -86,7 +91,7 @@ export default function CharacterAssistant({
     }
   }
 
-  if (!isVisible) return null
+  if (!isVisible || !isMounted) return null
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm">

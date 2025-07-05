@@ -1,4 +1,3 @@
-
 import { Client, Pool } from 'pg'
 
 // コネクションプールを作成
@@ -133,7 +132,7 @@ export async function createTables() {
     console.error('テーブル作成エラー:', error)
     throw error
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -230,7 +229,7 @@ export async function insertMockUsers() {
     console.error('モックデータ挿入エラー:', error)
     throw error
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -281,7 +280,7 @@ export async function upsertUser(userData: {
 
     return result.rows[0]
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -297,7 +296,7 @@ export async function getUser(userId: string) {
     return null
   } finally {
     try {
-      await client.end()
+      client.release()
     } catch (endError) {
       console.error('データベース接続終了エラー:', endError)
     }
@@ -312,7 +311,7 @@ export async function getAllUsers() {
     const result = await client.query('SELECT * FROM users ORDER BY points DESC')
     return result.rows
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -324,7 +323,7 @@ export async function deleteUser(userId: string) {
     await client.query('DELETE FROM users WHERE id = $1', [userId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -360,7 +359,7 @@ export async function addFriend(userId: string, friendId: string) {
     console.error('友達追加エラー:', error)
     return false
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -379,7 +378,7 @@ export async function getFriends(userId: string) {
 
     return result.rows
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -391,7 +390,7 @@ export async function removeFriend(userId: string, friendId: string) {
     await client.query('DELETE FROM friendships WHERE user_id = $1 AND friend_id = $2', [userId, friendId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -431,7 +430,7 @@ export async function addSubmission(submissionData: {
 
     return result.rows[0]
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -448,7 +447,7 @@ export async function getUserSubmissions(userId: string) {
 
     return result.rows
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -464,7 +463,7 @@ export async function updateLastLogin(userId: string) {
     `, [userId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -476,7 +475,7 @@ export async function getUserForAuth(userId: string) {
     const result = await client.query('SELECT id, name, password_hash FROM users WHERE id = $1', [userId])
     return result.rows[0] || null
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -492,7 +491,7 @@ export async function updatePassword(userId: string, passwordHash: string) {
     `, [passwordHash, userId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -525,7 +524,7 @@ export async function createNotification(notificationData: {
 
     return result.rows[0]
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -547,7 +546,7 @@ export async function getUserNotifications(userId: string) {
     return []
   } finally {
     try {
-      await client.end()
+      client.release()
     } catch (endError) {
       console.error('データベース接続終了エラー:', endError)
     }
@@ -566,7 +565,7 @@ export async function markNotificationAsRead(notificationId: number) {
     `, [notificationId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -582,7 +581,7 @@ export async function markAllNotificationsAsRead(userId: string) {
     `, [userId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -594,7 +593,7 @@ export async function deleteNotification(notificationId: number) {
     await client.query('DELETE FROM notifications WHERE id = $1', [notificationId])
     return true
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -610,7 +609,7 @@ export async function getUnreadNotificationCount(userId: string) {
 
     return parseInt(result.rows[0].count)
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -638,7 +637,7 @@ export async function approveFriendRequest(userId: string, requesterId: string) 
     console.error('友達申請承認エラー:', error)
     return false
   } finally {
-    await client.end()
+    client.release()
   }
 }
 
@@ -654,6 +653,6 @@ export async function getFriendRequest(userId: string, requesterId: string) {
 
     return result.rows[0] || null
   } finally {
-    await client.end()
+    client.release()
   }
 }
