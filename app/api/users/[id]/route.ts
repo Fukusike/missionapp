@@ -9,7 +9,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const user = await getUser(id)
+    
+    // タイムアウト処理を追加
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 5000)
+    )
+    
+    const user = await Promise.race([
+      getUser(id),
+      timeoutPromise
+    ])
     
     if (!user) {
       return NextResponse.json(
@@ -18,12 +27,20 @@ export async function GET(
       )
     }
 
-    // 最後のログイン時間を更新
-    await updateLastLogin(id)
+    // 最後のログイン時間を更新（非同期で実行）
+    updateLastLogin(id).catch(console.error)
 
     return NextResponse.json(user)
   } catch (error) {
     console.error('ユーザー取得エラー:', error)
+    
+    if (error instanceof Error && error.message === 'Request timeout') {
+      return NextResponse.json(
+        { error: 'リクエストがタイムアウトしました' },
+        { status: 408 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'ユーザーの取得に失敗しました' },
       { status: 500 }

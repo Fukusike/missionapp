@@ -1,17 +1,19 @@
 
-import { Client } from 'pg'
+import { Client, Pool } from 'pg'
+
+// コネクションプールを作成
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  query_timeout: 8000,
+})
 
 // データベース接続クライアントを作成
 export async function createClient() {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    query_timeout: 10000,
-  })
-  
   try {
-    await client.connect()
+    const client = await pool.connect()
     return client
   } catch (error) {
     console.error('データベース接続エラー:', error)

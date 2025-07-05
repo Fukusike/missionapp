@@ -12,15 +12,18 @@ const nextConfig = {
     unoptimized: true
   },
   reactStrictMode: false,
-  api: {
-    responseLimit: '8mb',
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
-    externalResolver: true,
-  },
-  httpAgentOptions: {
-    keepAlive: true,
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+        ],
+      },
+    ]
   }
 }
 
