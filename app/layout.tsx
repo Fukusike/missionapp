@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import CharacterAssistantToggle from "@/components/character-assistant-toggle"
+import NotificationBell from "@/components/notification-bell"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,7 +24,12 @@ export default function RootLayout({
     <html lang="ja">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          {children}
+          <div className="relative">
+            <div className="fixed top-4 right-4 z-50">
+              <NotificationBell />
+            </div>
+            {children}
+          </div>
           <Toaster />
           <CharacterAssistantToggle />
         </ThemeProvider>
