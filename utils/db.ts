@@ -94,6 +94,23 @@ export async function createTables() {
       )
     `)
 
+    // 通知管理テーブル
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        from_user_id VARCHAR(50),
+        from_user_name VARCHAR(100),
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `)
+
     console.log('全テーブルが作成されました')
   } catch (error) {
     console.error('テーブル作成エラー:', error)
@@ -439,6 +456,116 @@ export async function updatePassword(userId: string, passwordHash: string) {
       WHERE id = $2
     `, [passwordHash, userId])
     return true
+  } finally {
+    await client.end()
+  }
+}
+
+// 通知管理API関数
+
+// 通知を作成
+export async function createNotification(notificationData: {
+  userId: string
+  type: string
+  title: string
+  message: string
+  fromUserId?: string
+  fromUserName?: string
+}) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      INSERT INTO notifications (user_id, type, title, message, from_user_id, from_user_name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [
+      notificationData.userId,
+      notificationData.type,
+      notificationData.title,
+      notificationData.message,
+      notificationData.fromUserId || null,
+      notificationData.fromUserName || null
+    ])
+
+    return result.rows[0]
+  } finally {
+    await client.end()
+  }
+}
+
+// ユーザーの通知を取得
+export async function getUserNotifications(userId: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT * FROM notifications 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC
+    `, [userId])
+
+    return result.rows
+  } finally {
+    await client.end()
+  }
+}
+
+// 通知を既読にする
+export async function markNotificationAsRead(notificationId: number) {
+  const client = await createClient()
+
+  try {
+    await client.query(`
+      UPDATE notifications 
+      SET is_read = true 
+      WHERE id = $1
+    `, [notificationId])
+    return true
+  } finally {
+    await client.end()
+  }
+}
+
+// ユーザーのすべての通知を既読にする
+export async function markAllNotificationsAsRead(userId: string) {
+  const client = await createClient()
+
+  try {
+    await client.query(`
+      UPDATE notifications 
+      SET is_read = true 
+      WHERE user_id = $1 AND is_read = false
+    `, [userId])
+    return true
+  } finally {
+    await client.end()
+  }
+}
+
+// 通知を削除
+export async function deleteNotification(notificationId: number) {
+  const client = await createClient()
+
+  try {
+    await client.query('DELETE FROM notifications WHERE id = $1', [notificationId])
+    return true
+  } finally {
+    await client.end()
+  }
+}
+
+// ユーザーの未読通知数を取得
+export async function getUnreadNotificationCount(userId: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT COUNT(*) as count FROM notifications 
+      WHERE user_id = $1 AND is_read = false
+    `, [userId])
+
+    return parseInt(result.rows[0].count)
   } finally {
     await client.end()
   }
