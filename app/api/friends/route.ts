@@ -15,10 +15,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const friends = await getFriends(userId)
+    // タイムアウト処理を追加
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 8000)
+    )
+    
+    const friends = await Promise.race([
+      getFriends(userId),
+      timeoutPromise
+    ])
+    
     return NextResponse.json(friends)
   } catch (error) {
     console.error('友達リスト取得エラー:', error)
+    
+    if (error instanceof Error && error.message === 'Request timeout') {
+      return NextResponse.json(
+        { error: 'リクエストがタイムアウトしました' },
+        { status: 408 }
+      )
+    }
+    
     return NextResponse.json(
       { error: '友達リストの取得に失敗しました' },
       { status: 500 }

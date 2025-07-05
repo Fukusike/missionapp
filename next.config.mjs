@@ -11,7 +11,17 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  reactStrictMode: false
+  reactStrictMode: false,
+  api: {
+    responseLimit: '8mb',
+    bodyParser: {
+      sizeLimit: '1mb',
+    },
+    externalResolver: true,
+  },
+  httpAgentOptions: {
+    keepAlive: true,
+  }
 }
 
 export default nextConfig

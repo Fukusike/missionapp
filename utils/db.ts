@@ -5,9 +5,18 @@ import { Client } from 'pg'
 export async function createClient() {
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+    query_timeout: 10000,
   })
-  await client.connect()
-  return client
+  
+  try {
+    await client.connect()
+    return client
+  } catch (error) {
+    console.error('データベース接続エラー:', error)
+    throw error
+  }
 }
 
 // 全テーブルを作成する関数
@@ -282,8 +291,15 @@ export async function getUser(userId: string) {
   try {
     const result = await client.query('SELECT * FROM users WHERE id = $1', [userId])
     return result.rows[0] || null
+  } catch (error) {
+    console.error('ユーザー取得エラー:', error)
+    return null
   } finally {
-    await client.end()
+    try {
+      await client.end()
+    } catch (endError) {
+      console.error('データベース接続終了エラー:', endError)
+    }
   }
 }
 
@@ -521,11 +537,19 @@ export async function getUserNotifications(userId: string) {
       SELECT * FROM notifications 
       WHERE user_id = $1 
       ORDER BY created_at DESC
+      LIMIT 50
     `, [userId])
 
     return result.rows
+  } catch (error) {
+    console.error('通知取得エラー:', error)
+    return []
   } finally {
-    await client.end()
+    try {
+      await client.end()
+    } catch (endError) {
+      console.error('データベース接続終了エラー:', endError)
+    }
   }
 }
 
