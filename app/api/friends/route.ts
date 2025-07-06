@@ -56,9 +56,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'request') {
+      // 基本的なバリデーション
+      if (userId === friendId) {
+        return NextResponse.json(
+          { error: '自分自身に友達申請はできません' },
+          { status: 400 }
+        )
+      }
+
+      console.log('Friend request attempt:', { userId, friendId })
+      
       const success = await addFriend(userId, friendId)
 
       if (!success) {
+        console.error('Friend request failed:', { userId, friendId })
         return NextResponse.json(
           { error: '友達申請の送信に失敗しました' },
           { status: 400 }

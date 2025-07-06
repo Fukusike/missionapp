@@ -4,8 +4,11 @@ import { Client, Pool } from 'pg'
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10,
-  connectionTimeoutMillis: 5000,
-  query_timeout: 8000,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  query_timeout: 15000,
+  statement_timeout: 15000,
+  keepAlive: true,
 })
 
 // データベース接続クライアントを作成
@@ -331,32 +334,53 @@ export async function deleteUser(userId: string) {
 
 // 友達を追加（友達申請として）
 export async function addFriend(userId: string, friendId: string) {
-  if (userId === friendId) return false
+  if (userId === friendId) {
+    console.log('Cannot add self as friend:', userId)
+    return false
+  }
 
   const client = await createClient()
 
   try {
+    // 申請者が存在するかチェック
+    const userExists = await client.query('SELECT id FROM users WHERE id = $1', [userId])
+    if (userExists.rows.length === 0) {
+      console.log('User not found:', userId)
+      return false
+    }
+
     // 友達が存在するかチェック
     const friendExists = await client.query('SELECT id FROM users WHERE id = $1', [friendId])
-    if (friendExists.rows.length === 0) return false
+    if (friendExists.rows.length === 0) {
+      console.log('Friend not found:', friendId)
+      return false
+    }
 
-    // 既存の友達関係をチェック
+    // 既存の友達関係をチェック（双方向）
     const existingFriendship = await client.query(`
       SELECT * FROM friendships 
-      WHERE user_id = $1 AND friend_id = $2
+      WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
     `, [userId, friendId])
 
-    if (existingFriendship.rows.length > 0) return false
+    if (existingFriendship.rows.length > 0) {
+      console.log('Friendship already exists:', { userId, friendId, existing: existingFriendship.rows })
+      return false
+    }
 
     // 友達申請を追加（未承認状態）
-    await client.query(`
+    const result = await client.query(`
       INSERT INTO friendships (user_id, friend_id, is_approved)
       VALUES ($1, $2, false)
+      RETURNING *
     `, [userId, friendId])
 
+    console.log('Friend request created successfully:', result.rows[0])
     return true
   } catch (error) {
     console.error('友達追加エラー:', error)
+    if (error instanceof Error) {
+      console.error('Error details:', error.message)
+    }
     return false
   } finally {
     client.release()
