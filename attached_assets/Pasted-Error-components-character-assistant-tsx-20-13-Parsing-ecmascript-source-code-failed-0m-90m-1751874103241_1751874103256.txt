@@ -1,0 +1,23 @@
+Error: ./components/character-assistant.tsx:20:13
+Parsing ecmascript source code failed
+[0m [90m 18 |[39m     [32m"おっ、やる気の君が来た！一緒にXP稼いでこ〜！"[39m[33m,[39m[0m
+[0m [90m 19 |[39m     [32m"今日の課題、ぼくと一緒に攻略しよう。まずはログインボーナス的なハイタッチから！✋"[39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 20 |[39m     [32m"その"[39mやる気の火花[32m"、見逃さないよ。燃えていこう🔥"[39m[33m,[39m[0m
+[0m [90m    |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[0m
+[0m [90m 21 |[39m     [32m"君がアプリを開いたってだけで、今日はちょっと勝ちかも。"[39m[33m,[39m[0m
+[0m [90m 22 |[39m     [32m"さあ、XPの旅へようこそ。ミッションは、まだ君を待ってるよ！"[39m[33m,[39m[0m
+[0m [90m 23 |[39m   ][33m,[39m[0m
+
+Expected ',', got 'やる気の火花'
+    at BuildError (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/%5Broot%20of%20the%20server%5D__3a40d6d2._.js:17247:41)
+    at react-stack-bottom-frame (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:13596:24)
+    at renderWithHooks (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:3560:24)
+    at updateFunctionComponent (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:5317:21)
+    at beginWork (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:5916:24)
+    at runWithFiberInDEV (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:1335:74)
+    at performUnitOfWork (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:7988:97)
+    at workLoopSync (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:7880:40)
+    at renderRootSync (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:7863:13)
+    at performWorkOnRoot (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:7602:212)
+    at performWorkOnRootViaSchedulerTask (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_react-dom_82bb97c6._.js:8566:9)
+    at MessagePort.performWorkUntilDeadline (https://1cc12ad2-8850-4056-b608-2e482e2f5466-00-2pkrzm176jjd3.sisko.replit.dev/_next/static/chunks/node_modules_beb00741._.js:1095:64)
