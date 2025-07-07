@@ -25,7 +25,7 @@ export default function Home() {
   // ユーザー登録状態をチェックしてナビゲートする関数
   const navigateWithUserCheck = async (path: string) => {
     if (!isClient) return
-    
+
     const userData = await getUser()
     if (!userData) {
       // ユーザーデータがない場合は登録ページにリダイレクト
@@ -43,7 +43,7 @@ export default function Home() {
         <main className="flex-1 container max-w-md mx-auto p-4">
           <div className="space-y-6 py-8">
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-green-800">ミッションマスター</h1>
+              <h1 className="text-3xl font-bold text-green-800">スタディクエスト</h1>
               <p className="text-green-600">読み込み中...</p>
             </div>
           </div>
@@ -57,7 +57,7 @@ export default function Home() {
       <main className="flex-1 container max-w-md mx-auto p-4">
         <div className="space-y-6 py-8">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-green-800">ミッションマスター</h1>
+            <h1 className="text-3xl font-bold text-green-800">スタディクエスト</h1>
             <p className="text-green-600">課題をミッションに変えて、学びを楽しもう！</p>
           </div>
 
