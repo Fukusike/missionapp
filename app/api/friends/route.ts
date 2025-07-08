@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getFriends, addFriend, removeFriend, getUser, createNotification, approveFriendRequest, getFriendRequest } from '@/utils/db'
+import { getFriends, addFriend, removeFriend, getUser, createNotification, approveFriendRequest, getFriendRequest, checkFriendshipExists } from '@/utils/db'
 
 // GET: 友達リストを取得
 export async function GET(request: NextRequest) {
@@ -65,6 +65,23 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Friend request attempt:', { userId, friendId })
+      
+      // 友達関係の存在チェック
+      const friendshipCheck = await checkFriendshipExists(userId, friendId)
+      
+      if (friendshipCheck.exists) {
+        if (friendshipCheck.type === 'approved') {
+          return NextResponse.json(
+            { message: '既に友達関係が成立しています' },
+            { status: 200 }
+          )
+        } else if (friendshipCheck.type === 'pending') {
+          return NextResponse.json(
+            { message: '既に友達申請済みです' },
+            { status: 200 }
+          )
+        }
+      }
       
       const success = await addFriend(userId, friendId)
 

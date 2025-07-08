@@ -356,17 +356,6 @@ export async function addFriend(userId: string, friendId: string) {
       return false
     }
 
-    // 既存の友達関係をチェック（双方向）
-    const existingFriendship = await client.query(`
-      SELECT * FROM friendships 
-      WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
-    `, [userId, friendId])
-
-    if (existingFriendship.rows.length > 0) {
-      console.log('Friendship already exists:', { userId, friendId, existing: existingFriendship.rows })
-      return false
-    }
-
     // 友達申請を追加（未承認状態）
     const result = await client.query(`
       INSERT INTO friendships (user_id, friend_id, is_approved)
@@ -676,6 +665,31 @@ export async function getFriendRequest(userId: string, requesterId: string) {
     `, [requesterId, userId])
 
     return result.rows[0] || null
+  } finally {
+    client.release()
+  }
+}
+
+// 友達関係の存在チェック（承認済み・未承認両方）
+export async function checkFriendshipExists(userId: string, friendId: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT * FROM friendships 
+      WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
+    `, [userId, friendId])
+
+    if (result.rows.length === 0) {
+      return { exists: false, type: null }
+    }
+
+    const friendship = result.rows[0]
+    if (friendship.is_approved) {
+      return { exists: true, type: 'approved' }
+    } else {
+      return { exists: true, type: 'pending' }
+    }
   } finally {
     client.release()
   }

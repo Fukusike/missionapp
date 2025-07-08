@@ -145,7 +145,7 @@ export async function updateUser(userData: Partial<UserData>): Promise<UserData 
 }
 
 // 友達を追加
-export async function addFriend(friendId: string): Promise<boolean> {
+export async function addFriend(friendId: string): Promise<{ success: boolean; message?: string }> {
   try {
     const userId = getCurrentUserId()
     if (!userId) throw new Error('No current user')
@@ -161,10 +161,15 @@ export async function addFriend(friendId: string): Promise<boolean> {
       }),
     })
 
-    return response.ok
+    const data = await response.json()
+    
+    return {
+      success: response.ok,
+      message: data.message || data.error
+    }
   } catch (error) {
     console.error('Error adding friend:', error)
-    return false
+    return { success: false, message: '友達申請に失敗しました' }
   }
 }
 

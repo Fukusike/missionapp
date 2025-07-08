@@ -169,18 +169,18 @@ export default function ProfilePage() {
     }
 
     try {
-      const success = await addFriend(friendId.trim())
-      if (success) {
+      const result = await addFriend(friendId.trim())
+      if (result.success) {
         setFriendId("")
         setIsAddFriendDialogOpen(false)
         toast({
-          title: "友達追加完了",
-          description: "友達が追加されました",
+          title: "友達申請完了",
+          description: result.message || "友達申請を送信しました",
         })
       } else {
         toast({
           title: "エラー",
-          description: "友達の追加に失敗しました。ユーザーIDを確認してください",
+          description: result.message || "友達の追加に失敗しました。ユーザーIDを確認してください",
           variant: "destructive",
         })
       }
