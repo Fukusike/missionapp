@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [selectedNotification, setSelectedNotification] = useState<any>(null)
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false)
-  const [isApproving, setIsApproving] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
   const handleApproveFriendRequest = async () => {
     if (!selectedNotification || !currentUserId) return
 
-    setIsApproving(true)
+    setIsProcessing(true)
     try {
       const response = await fetch('/api/friends', {
         method: 'PUT',
@@ -150,6 +150,8 @@ export default function NotificationsPage() {
         })
         setIsApprovalDialogOpen(false)
         setSelectedNotification(null)
+        // 通知リストを更新
+        await fetchNotifications(currentUserId)
       } else {
         throw new Error('承認に失敗しました')
       }
@@ -160,7 +162,47 @@ export default function NotificationsPage() {
         variant: "destructive",
       })
     } finally {
-      setIsApproving(false)
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRejectFriendRequest = async () => {
+    if (!selectedNotification || !currentUserId) return
+
+    setIsProcessing(true)
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          friendId: selectedNotification.fromUserId,
+          type: 'reject',
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "友達申請を拒否しました",
+          description: `${selectedNotification.fromUserName}さんの友達申請を拒否しました`,
+        })
+        setIsApprovalDialogOpen(false)
+        setSelectedNotification(null)
+        // 通知リストを更新
+        await fetchNotifications(currentUserId)
+      } else {
+        throw new Error('拒否に失敗しました')
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "友達申請の拒否に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -314,35 +356,46 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {/* 友達申請承認ダイアログ */}
+        {/* 友達申請承認・拒否ダイアログ */}
         <AlertDialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-blue-500" />
-                友達申請の承認
+                友達申請への回答
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {selectedNotification && (
                   <span>
-                    <strong>{selectedNotification.fromUserName}</strong>さんからの友達申請を承認しますか？
+                    <strong>{selectedNotification.fromUserName}</strong>さんからの友達申請にどう回答しますか？
                     <br />
-                    承認すると、お互いのランキングで友達として表示されるようになります。
+                    <br />
+                    <strong>承認:</strong> お互いのランキングで友達として表示されるようになります。
+                    <br />
+                    <strong>拒否:</strong> 友達申請を断り、通知を削除します。
                   </span>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isApproving}>
+            <AlertDialogFooter className="flex gap-2">
+              <AlertDialogCancel disabled={isProcessing}>
                 キャンセル
               </AlertDialogCancel>
-              <AlertDialogAction 
+              <Button
+                onClick={handleRejectFriendRequest}
+                disabled={isProcessing}
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                {isProcessing ? '処理中...' : '拒否する'}
+              </Button>
+              <Button
                 onClick={handleApproveFriendRequest}
-                disabled={isApproving}
+                disabled={isProcessing}
                 className="bg-blue-500 hover:bg-blue-600"
               >
-                {isApproving ? '承認中...' : '承認する'}
-              </AlertDialogAction>
+                {isProcessing ? '処理中...' : '承認する'}
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

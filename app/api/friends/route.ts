@@ -210,22 +210,27 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE: 友達を削除
+// DELETE: 友達を削除または友達申請を拒否
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('userId')
-  const friendId = searchParams.get('friendId')
-
-  if (!userId || !friendId) {
-    return NextResponse.json(
-      { error: 'ユーザーIDと友達IDが必要です' },
-      { status: 400 }
-    )
-  }
-
   try {
-    await removeFriend(userId, friendId)
-    return NextResponse.json({ message: '友達関係が削除されました' })
+    const { userId, friendId, type = 'remove' } = await request.json()
+
+    if (!userId || !friendId) {
+      return NextResponse.json(
+        { error: 'ユーザーIDと友達IDが必要です' },
+        { status: 400 }
+      )
+    }
+
+    if (type === 'reject') {
+      // 友達申請を拒否（申請者→受信者の関係を削除）
+      await removeFriend(friendId, userId)
+      return NextResponse.json({ message: '友達申請を拒否しました' })
+    } else {
+      // 既存の友達関係を削除
+      await removeFriend(userId, friendId)
+      return NextResponse.json({ message: '友達関係が削除されました' })
+    }
   } catch (error) {
     console.error('友達削除エラー:', error)
     return NextResponse.json(
