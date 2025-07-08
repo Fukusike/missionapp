@@ -50,7 +50,7 @@ export function setCurrentUserId(userId: string): void {
 }
 
 // ユーザーデータを保存
-export async function saveUser(userData: Omit<UserData, 'createdAt'>): Promise<UserData> {
+export async function saveUser(userData: Omit<UserData, 'createdAt'> & { profileImageFile?: string }): Promise<UserData> {
   try {
     const response = await fetch('/api/users', {
       method: 'POST',
@@ -120,7 +120,7 @@ export async function updateLastLogin(userId: string): Promise<void> {
 }
 
 // ユーザーデータを更新
-export async function updateUser(userData: Partial<UserData>): Promise<UserData | null> {
+export async function updateUser(userData: Partial<UserData> & { profileImageFile?: string }): Promise<UserData | null> {
   try {
     const userId = getCurrentUserId()
     if (!userId) throw new Error('No current user')

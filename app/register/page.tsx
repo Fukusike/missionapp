@@ -145,6 +145,7 @@ export default function RegisterPage() {
       email: email.trim(),
       password: password,
       profileImage: profileImage,
+      profileImageFile: profileImage, // Base64データとして送信
       points: 0,
       submissions: 0,
       badges: [],
@@ -325,7 +326,7 @@ export default function RegisterPage() {
           >
             {isLoading ? "登録中..." : "登録する"}
           </Button>
-          
+
           <div className="text-center text-sm text-green-600">
             すでにアカウントをお持ちの方は{" "}
             <Link href="/login" className="text-green-700 hover:underline font-medium">

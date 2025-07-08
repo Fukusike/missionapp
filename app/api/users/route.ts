@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, upsertUser } from '@/utils/db'
 import { emailService } from '@/utils/email-service'
 import bcrypt from 'bcryptjs'
+import { writeFile } from 'fs/promises'
+import path from 'path'
 
 // GET: 全ユーザーを取得
 export async function GET() {
@@ -42,11 +44,46 @@ export async function POST(request: NextRequest) {
       passwordHash = await bcrypt.hash(userData.password, 12)
     }
 
+    // プロフィール画像のアップロード処理
+    let profileImagePath = userData.profileImage
+    if (userData.profileImageFile) {
+      // Base64画像データの場合の処理
+      const base64Data = userData.profileImageFile.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      
+      // ファイル拡張子を判定
+      const mimeType = userData.profileImageFile.match(/data:image\/(\w+);base64,/)?.[1] || 'png'
+      const fileExtension = mimeType === 'jpeg' ? 'jpg' : mimeType
+      
+      // ファイル名を生成
+      const timestamp = Date.now()
+      const fileName = `${userData.id}_${timestamp}.${fileExtension}`
+      const filePath = path.join(process.cwd(), 'public', 'uploads', 'profile-images', fileName)
+      
+      try {
+        const fs = require('fs')
+        const path = require('path')
+        
+        // ディレクトリが存在しない場合は作成
+        const dir = path.dirname(filePath)
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true })
+        }
+        
+        // ファイルを保存
+        await writeFile(filePath, buffer)
+        profileImagePath = `/uploads/profile-images/${fileName}`
+      } catch (error) {
+        console.error('プロフィール画像保存エラー:', error)
+        // エラーがあってもユーザー作成は続行
+      }
+    }
+
     const user = await upsertUser({
       id: userData.id,
       name: userData.name,
       email: userData.email,
-      profileImage: userData.profileImage,
+      profileImage: profileImagePath,
       points: userData.points,
       submissions: userData.submissions,
       badges: userData.badges,

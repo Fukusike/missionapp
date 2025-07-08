@@ -130,6 +130,7 @@ export default function ProfilePage() {
         name: editedName.trim(),
         email: editedEmail.trim(),
         profileImage: profileImage,
+        profileImageFile: profileImage, // Base64データとして送信
       })
 
       if (updatedUser) {
