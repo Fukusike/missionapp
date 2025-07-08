@@ -156,12 +156,41 @@ async function initializeEmailTables() {
   }
 }
 
+async function initializeCourseTable() {
+  try {
+    const client = await createClient()
+    
+    // 講義管理テーブル作成
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS courses (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        instructor VARCHAR(255) NOT NULL,
+        color VARCHAR(7) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `)
+
+    client.release()
+    console.log('講義管理テーブルが作成されました')
+  } catch (error) {
+    console.error('講義管理テーブル作成エラー:', error)
+    throw error
+  }
+}
+
 async function initializeDatabase() {
   try {
     console.log('データベースを初期化しています...')
     
     // テーブル作成
     await createTables()
+    
+    // 講義管理テーブル初期化
+    await initializeCourseTable()
     
     // メールテンプレートテーブル初期化
     await initializeEmailTables()
