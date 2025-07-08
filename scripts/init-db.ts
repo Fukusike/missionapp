@@ -158,6 +158,66 @@ async function initializeEmailTables() {
 
 
 
+async function insertNotificationTemplates() {
+  try {
+    const client = await createClient()
+
+    // 通知テンプレートの初期データ
+    const templates = [
+      {
+        notification_type: 'friend_request',
+        title_template: '友達申請',
+        message_template: '{{fromUserName}}さんから友達申請が届いています',
+        description: '他ユーザーから友達申請を受けた時の通知'
+      },
+      {
+        notification_type: 'friend_accepted',
+        title_template: '友達申請承認',
+        message_template: '{{fromUserName}}さんがあなたの友達申請を承認しました',
+        description: '送った友達申請が承認された時の通知'
+      },
+      {
+        notification_type: 'ranking_change',
+        title_template: 'ランキング変動',
+        message_template: 'あなたのランキングが{{rankChange}}位{{direction}}しました！現在{{currentRank}}位です',
+        description: '友達ランキングの順位変動通知'
+      },
+      {
+        notification_type: 'mission_message',
+        title_template: 'ミッションちゃんからのメッセージ',
+        message_template: '{{missionMessage}}',
+        description: 'ミッションちゃんからの応援・励ましメッセージ'
+      },
+      {
+        notification_type: 'daily_reminder',
+        title_template: '今日の課題リマインダー',
+        message_template: '今日もお疲れさま！{{submissionCount}}個の課題が残っています。一緒に頑張ろう！',
+        description: '日次の課題提出リマインダー'
+      },
+      {
+        notification_type: 'achievement_unlocked',
+        title_template: '新しいバッジ獲得！',
+        message_template: '🎉 おめでとう！「{{badgeName}}」バッジを獲得しました！',
+        description: '新しいバッジ・実績解除時の通知'
+      }
+    ]
+
+    for (const template of templates) {
+      await client.query(`
+        INSERT INTO notification_templates (notification_type, title_template, message_template, description)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (notification_type) DO NOTHING
+      `, [template.notification_type, template.title_template, template.message_template, template.description])
+    }
+
+    client.release()
+    console.log('通知テンプレートが初期化されました')
+  } catch (error) {
+    console.error('通知テンプレート初期化エラー:', error)
+    throw error
+  }
+}
+
 async function initializeDatabase() {
   try {
     console.log('データベースを初期化しています...')
@@ -167,6 +227,9 @@ async function initializeDatabase() {
     
     // メールテンプレートテーブル初期化
     await initializeEmailTables()
+
+    // 通知テンプレート初期化
+    await insertNotificationTemplates()
     
     // モックデータ挿入
     await insertMockUsers()

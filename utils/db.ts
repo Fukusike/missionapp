@@ -175,6 +175,20 @@ export async function createTables() {
       )
     `)
 
+    // 通知文言テンプレートテーブル
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notification_templates (
+        id SERIAL PRIMARY KEY,
+        notification_type VARCHAR(50) UNIQUE NOT NULL,
+        title_template VARCHAR(255) NOT NULL,
+        message_template TEXT NOT NULL,
+        description TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
     console.log('全テーブルが作成されました')
   } catch (error) {
     console.error('テーブル作成エラー:', error)
@@ -838,6 +852,72 @@ export async function getCourse(courseId: number) {
   try {
     const result = await client.query('SELECT * FROM courses WHERE id = $1', [courseId])
     return result.rows[0] || null
+  } finally {
+    client.release()
+  }
+}
+
+// 通知テンプレート管理API関数
+
+// 通知テンプレートを取得
+export async function getNotificationTemplate(notificationType: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(
+      'SELECT * FROM notification_templates WHERE notification_type = $1 AND is_active = true',
+      [notificationType]
+    )
+    return result.rows[0] || null
+  } finally {
+    client.release()
+  }
+}
+
+// 全ての通知テンプレートを取得
+export async function getAllNotificationTemplates() {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(
+      'SELECT * FROM notification_templates ORDER BY notification_type'
+    )
+    return result.rows
+  } finally {
+    client.release()
+  }
+}
+
+// 通知テンプレートを作成/更新
+export async function upsertNotificationTemplate(templateData: {
+  notificationType: string
+  titleTemplate: string
+  messageTemplate: string
+  description: string
+  isActive?: boolean
+}) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      INSERT INTO notification_templates (notification_type, title_template, message_template, description, is_active)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (notification_type) DO UPDATE SET
+        title_template = EXCLUDED.title_template,
+        message_template = EXCLUDED.message_template,
+        description = EXCLUDED.description,
+        is_active = EXCLUDED.is_active,
+        updated_at = NOW()
+      RETURNING *
+    `, [
+      templateData.notificationType,
+      templateData.titleTemplate,
+      templateData.messageTemplate,
+      templateData.description,
+      templateData.isActive ?? true
+    ])
+
+    return result.rows[0]
   } finally {
     client.release()
   }
