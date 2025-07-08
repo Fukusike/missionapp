@@ -85,8 +85,37 @@ export async function POST(request: NextRequest) {
             { status: 200 }
           )
         } else if (friendshipCheck.type === 'pending') {
+          // 未承認の場合は通知を再送信
+          const fromUser = await getUser(userId)
+          const toUser = await getUser(friendId)
+
+          if (fromUser && toUser) {
+            await createNotificationFromTemplate(
+              friendId,
+              'friend_request',
+              { fromUserName: fromUser.name },
+              userId,
+              fromUser.name
+            )
+          }
+
+          // 友達申請メールも再送信
+          if (toUser?.email) {
+            try {
+              await emailService.sendFriendRequestEmail(
+                friendId,
+                toUser.email,
+                userId,
+                fromUser?.name || 'ユーザー'
+              )
+              console.log(`友達申請メール再送信成功: ${toUser.email}`)
+            } catch (error) {
+              console.error('友達申請メール再送信エラー:', error)
+            }
+          }
+
           return NextResponse.json(
-            { message: '既に友達申請済みです' },
+            { message: '友達申請通知を再送信しました' },
             { status: 200 }
           )
         }
