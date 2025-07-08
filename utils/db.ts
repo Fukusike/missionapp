@@ -32,7 +32,7 @@ export async function createTables() {
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
-        email VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
         password_hash VARCHAR(255),
         profile_image TEXT,
         points INTEGER DEFAULT 0,
@@ -41,6 +41,37 @@ export async function createTables() {
         last_login TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // メールテンプレートテーブル
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_templates (
+        id SERIAL PRIMARY KEY,
+        template_key VARCHAR(50) UNIQUE NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        purpose TEXT NOT NULL,
+        is_html BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // メール送信ログテーブル
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        template_key VARCHAR(50) NOT NULL,
+        recipient_email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        error_message TEXT,
+        retry_count INTEGER DEFAULT 0,
+        sent_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `)
 
