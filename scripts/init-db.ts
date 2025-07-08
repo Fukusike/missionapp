@@ -145,6 +145,24 @@ async function initializeEmailTables() {
           </div>
         </div>',
         '送った友達申請が承認された時の通知メール'
+      ),
+      (
+        'ranking_overtaken',
+        '🏃‍♂️ ランキング変動！追い越されちゃった！',
+        '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; border-radius: 15px; overflow: hidden;">
+          <div style="padding: 40px 30px; text-align: center;">
+            <h1 style="margin: 0 0 20px 0; font-size: 26px; color: #d63384;">🏆 ランキングバトル発生！</h1>
+            <p style="font-size: 18px; margin: 20px 0;">おっと！<strong>{{overtakerName}}</strong>さんがあなたを追い越しました！</p>
+            <div style="background: rgba(255,255,255,0.8); padding: 20px; border-radius: 10px; margin: 30px 0;">
+              <p style="margin: 0 0 10px 0; font-size: 16px;">📊 <strong>現在のスコア</strong></p>
+              <p style="margin: 0 0 5px 0; font-size: 16px;">🥇 {{overtakerName}}さん: <span style="color: #198754; font-weight: bold;">{{overtakerPoints}}pt</span></p>
+              <p style="margin: 0; font-size: 16px;">🥈 あなた: <span style="color: #fd7e14; font-weight: bold;">{{yourPoints}}pt</span></p>
+            </div>
+            <p style="font-size: 16px; margin: 20px 0;">でも大丈夫！逆転のチャンスはまだまだある。<em>今すぐ課題に取り組んで</em>、トップを奪い返そう！</p>
+            <p style="font-size: 14px; margin: 20px 0; opacity: 0.8;">🔥 連続課題提出で一気に逆転できるよ！</p>
+          </div>
+        </div>',
+        '友達に追い越された時のメール通知'
       )
       ON CONFLICT (template_key) DO NOTHING
     `)
@@ -182,6 +200,12 @@ async function insertNotificationTemplates() {
         title_template: 'ランキング変動',
         message_template: 'あなたのランキングが{{rankChange}}位{{direction}}しました！現在{{currentRank}}位です',
         description: '友達ランキングの順位変動通知'
+      },
+      {
+        notification_type: 'ranking_overtaken',
+        title_template: 'ランキング変動',
+        message_template: '{{overtakerName}}さんにポイントで追い越されました！現在{{overtakerName}}さんは{{overtakerPoints}}pt、あなたは{{yourPoints}}ptです',
+        description: '友達に追い越された時の通知'
       },
       {
         notification_type: 'mission_message',

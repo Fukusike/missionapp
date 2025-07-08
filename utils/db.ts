@@ -493,11 +493,27 @@ export async function addSubmission(submissionData: {
 
     // ユーザーのポイントと提出回数を更新
     if (submissionData.isValid) {
+      // 更新前のポイントを取得
+      const oldPointsResult = await client.query('SELECT points FROM users WHERE id = $1', [submissionData.userId])
+      const oldPoints = oldPointsResult.rows[0]?.points || 0
+
       await client.query(`
         UPDATE users 
         SET points = points + $1, submissions = submissions + 1, updated_at = NOW()
         WHERE id = $2
       `, [submissionData.pointsEarned, submissionData.userId])
+
+      // 新しいポイント数を計算
+      const newPoints = oldPoints + submissionData.pointsEarned
+
+      // ランキング追い越しチェック（非同期で実行、エラーがあっても提出処理は続行）
+      setImmediate(async () => {
+        try {
+          await checkAndNotifyRankingOvertake(submissionData.userId, newPoints)
+        } catch (error) {
+          console.error('ランキング追い越し通知エラー:', error)
+        }
+      })
     }
 
     return result.rows[0]
@@ -903,6 +919,69 @@ export async function getCourse(courseId: number) {
   try {
     const result = await client.query('SELECT * FROM courses WHERE id = $1', [courseId])
     return result.rows[0] || null
+  } finally {
+    client.release()
+  }
+}
+
+// ランキング関連API関数
+
+// ユーザーが友達を追い越したかチェックし、通知を送信
+export async function checkAndNotifyRankingOvertake(userId: string, newPoints: number) {
+  const client = await createClient()
+
+  try {
+    // ユーザーの情報を取得
+    const userResult = await client.query('SELECT name, email FROM users WHERE id = $1', [userId])
+    if (userResult.rows.length === 0) {
+      return
+    }
+    const user = userResult.rows[0]
+
+    // 承認済みの友達の中で、新しいポイントより低いポイントを持つ友達を取得
+    // （これらの友達が追い越された可能性がある）
+    const overtakenFriendsResult = await client.query(`
+      SELECT u.id, u.name, u.email, u.points
+      FROM users u
+      JOIN friendships f ON u.id = f.friend_id
+      WHERE f.user_id = $1 
+        AND f.is_approved = true
+        AND u.points < $2
+    `, [userId, newPoints])
+
+    // 追い越された友達それぞれに通知とメールを送信
+    for (const friend of overtakenFriendsResult.rows) {
+      // アプリ内通知を作成
+      await createNotificationFromTemplate(
+        friend.id,
+        'ranking_overtaken',
+        {
+          overtakerName: user.name,
+          overtakerPoints: newPoints.toString(),
+          yourPoints: friend.points.toString()
+        }
+      )
+
+      // メール通知を送信（メールアドレスがある場合のみ）
+      if (friend.email) {
+        try {
+          const { emailService } = await import('./email-service')
+          await emailService.sendRankingOvertakenEmail(
+            friend.id,
+            friend.email,
+            user.name,
+            newPoints,
+            friend.points
+          )
+        } catch (error) {
+          console.error(`ランキング追い越しメール送信エラー (${friend.email}):`, error)
+        }
+      }
+    }
+
+    console.log(`ランキング追い越し通知処理完了: ${overtakenFriendsResult.rows.length}人に通知`)
+  } catch (error) {
+    console.error('ランキング追い越しチェックエラー:', error)
   } finally {
     client.release()
   }

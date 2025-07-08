@@ -179,6 +179,25 @@ class EmailService {
       variables: { fromUserName }
     })
   }
+
+  async sendRankingOvertakenEmail(
+    recipientUserId: string,
+    recipientEmail: string,
+    overtakerName: string,
+    overtakerPoints: number,
+    yourPoints: number
+  ): Promise<boolean> {
+    return this.sendEmail({
+      templateKey: 'ranking_overtaken',
+      recipientEmail: recipientEmail,
+      userId: recipientUserId,
+      variables: {
+        overtakerName,
+        overtakerPoints: overtakerPoints.toString(),
+        yourPoints: yourPoints.toString()
+      }
+    })
+  }
 }
 
 export const emailService = new EmailService()
