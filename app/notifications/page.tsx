@@ -6,23 +6,115 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Bell, Users, Check, Trash2, UserCheck } from 'lucide-react'
-import { useNotificationStore } from '@/utils/notification-store'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { getCurrentUserId } from '@/utils/user-store'
 import Link from 'next/link'
 
+interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string
+  fromUserId: string
+  fromUserName: string
+  isRead: boolean
+  createdAt: Date
+}
+
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, removeNotification, unreadCount } = useNotificationStore()
   const { toast } = useToast()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [selectedNotification, setSelectedNotification] = useState<any>(null)
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    setCurrentUserId(getCurrentUserId())
+    const userId = getCurrentUserId()
+    setCurrentUserId(userId)
+    if (userId) {
+      fetchNotifications(userId)
+    }
   }, [])
+
+  const fetchNotifications = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/notifications?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setNotifications(data)
+        setUnreadCount(data.filter((n: Notification) => !n.isRead).length)
+      }
+    } catch (error) {
+      console.error('通知取得エラー:', error)
+    }
+  }
+
+  const markAsRead = async (id: string) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notificationId: parseInt(id),
+          action: 'markAsRead'
+        }),
+      })
+
+      if (response.ok && currentUserId) {
+        await fetchNotifications(currentUserId)
+      }
+    } catch (error) {
+      console.error('通知更新エラー:', error)
+    }
+  }
+
+  const markAllAsRead = async () => {
+    if (!currentUserId) return
+    
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          action: 'markAllAsRead'
+        }),
+      })
+
+      if (response.ok) {
+        await fetchNotifications(currentUserId)
+      }
+    } catch (error) {
+      console.error('通知更新エラー:', error)
+    }
+  }
+
+  const removeNotification = async (id: string) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notificationId: parseInt(id)
+        }),
+      })
+
+      if (response.ok && currentUserId) {
+        await fetchNotifications(currentUserId)
+      }
+    } catch (error) {
+      console.error('通知削除エラー:', error)
+    }
+  }
 
   const handleNotificationClick = (notification: any) => {
     if (notification.type === 'friend_request' && !notification.isRead) {
