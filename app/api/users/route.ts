@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, upsertUser } from '@/utils/db'
+import { emailService } from '@/utils/email-service'
 import bcrypt from 'bcryptjs'
 
 // GET: 全ユーザーを取得
@@ -51,6 +52,17 @@ export async function POST(request: NextRequest) {
       badges: userData.badges,
       passwordHash: passwordHash
     })
+
+    // アカウント作成ウェルカムメールを送信（メールアドレスがある場合のみ）
+    if (userData.email) {
+      try {
+        await emailService.sendAccountCreatedEmail(userData.id, userData.email, userData.name)
+        console.log(`ウェルカムメール送信成功: ${userData.email}`)
+      } catch (error) {
+        console.error('ウェルカムメール送信エラー:', error)
+        // メール送信エラーはユーザー作成の成功に影響しない
+      }
+    }
 
     return NextResponse.json(user, { status: 201 })
   } catch (error) {

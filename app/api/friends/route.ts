@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getFriends, addFriend, removeFriend, getUser, createNotification, approveFriendRequest, getFriendRequest, checkFriendshipExists } from '@/utils/db'
+import { emailService } from '@/utils/email-service'
 
 // GET: 友達リストを取得
 export async function GET(request: NextRequest) {
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
 
       // 通知情報を取得
       const requesterUser = await getUser(userId)
+      const friendUser = await getUser(friendId)
 
       // 友達申請の通知を作成
       await createNotification({
@@ -105,6 +107,22 @@ export async function POST(request: NextRequest) {
         fromUserId: userId,
         fromUserName: requesterUser?.name || 'ユーザー'
       })
+
+      // 友達申請メールを送信（受信者にメールアドレスがある場合のみ）
+      if (friendUser?.email) {
+        try {
+          await emailService.sendFriendRequestEmail(
+            friendId,
+            friendUser.email,
+            userId,
+            requesterUser?.name || 'ユーザー'
+          )
+          console.log(`友達申請メール送信成功: ${friendUser.email}`)
+        } catch (error) {
+          console.error('友達申請メール送信エラー:', error)
+          // メール送信エラーは友達申請の成功に影響しない
+        }
+      }
 
       return NextResponse.json({ 
         message: '友達申請を送信しました'
@@ -153,6 +171,8 @@ export async function PUT(request: NextRequest) {
 
     // 申請者に承認通知を送信
     const approverUser = await getUser(userId)
+    const requesterUser = await getUser(requesterId)
+    
     await createNotification({
       userId: requesterId,
       type: 'friend_accepted',
@@ -161,6 +181,22 @@ export async function PUT(request: NextRequest) {
       fromUserId: userId,
       fromUserName: approverUser?.name || 'ユーザー'
     })
+
+    // 友達申請承認メールを送信（申請者にメールアドレスがある場合のみ）
+    if (requesterUser?.email) {
+      try {
+        await emailService.sendFriendAcceptedEmail(
+          requesterId,
+          requesterUser.email,
+          userId,
+          approverUser?.name || 'ユーザー'
+        )
+        console.log(`友達申請承認メール送信成功: ${requesterUser.email}`)
+      } catch (error) {
+        console.error('友達申請承認メール送信エラー:', error)
+        // メール送信エラーは承認の成功に影響しない
+      }
+    }
 
     return NextResponse.json({ 
       message: '友達申請を承認しました'
