@@ -600,6 +600,57 @@ export async function createNotification(notificationData: {
   }
 }
 
+// テンプレート変数を置換する関数
+function replaceTemplateVariables(template: string, variables: Record<string, string>): string {
+  let result = template
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{${key}}}`, 'g')
+    result = result.replace(regex, value)
+  }
+  return result
+}
+
+// テンプレートを使用して通知を作成
+export async function createNotificationFromTemplate(
+  userId: string,
+  notificationType: string,
+  variables: Record<string, string> = {},
+  fromUserId?: string,
+  fromUserName?: string
+) {
+  const client = await createClient()
+
+  try {
+    // 通知テンプレートを取得
+    const template = await getNotificationTemplate(notificationType)
+    if (!template) {
+      throw new Error(`通知テンプレート "${notificationType}" が見つかりません`)
+    }
+
+    // テンプレート変数を置換
+    const title = replaceTemplateVariables(template.title_template, variables)
+    const message = replaceTemplateVariables(template.message_template, variables)
+
+    // 通知を作成
+    const result = await client.query(`
+      INSERT INTO notifications (user_id, type, title, message, from_user_id, from_user_name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [
+      userId,
+      notificationType,
+      title,
+      message,
+      fromUserId || null,
+      fromUserName || null
+    ])
+
+    return result.rows[0]
+  } finally {
+    client.release()
+  }
+}
+
 // ユーザーの通知を取得
 export async function getUserNotifications(userId: string) {
   const client = await createClient()

@@ -1,6 +1,14 @@
-
 import { NextRequest, NextResponse } from 'next/server'
-import { getFriends, addFriend, removeFriend, getUser, createNotification, approveFriendRequest, getFriendRequest, checkFriendshipExists } from '@/utils/db'
+import { 
+  addFriend, 
+  getFriends, 
+  removeFriend, 
+  checkFriendshipExists, 
+  approveFriendRequest, 
+  getFriendRequest,
+  createNotificationFromTemplate,
+  getUser
+} from '../../../utils/db'
 import { emailService } from '@/utils/email-service'
 
 // GET: 友達リストを取得
@@ -20,23 +28,23 @@ export async function GET(request: NextRequest) {
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Request timeout')), 8000)
     )
-    
+
     const friends = await Promise.race([
       getFriends(userId),
       timeoutPromise
     ])
-    
+
     return NextResponse.json(friends)
   } catch (error) {
     console.error('友達リスト取得エラー:', error)
-    
+
     if (error instanceof Error && error.message === 'Request timeout') {
       return NextResponse.json(
         { error: 'リクエストがタイムアウトしました' },
         { status: 408 }
       )
     }
-    
+
     return NextResponse.json(
       { error: '友達リストの取得に失敗しました' },
       { status: 500 }
@@ -66,10 +74,10 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Friend request attempt:', { userId, friendId })
-      
+
       // 友達関係の存在チェック
       const friendshipCheck = await checkFriendshipExists(userId, friendId)
-      
+
       if (friendshipCheck.exists) {
         if (friendshipCheck.type === 'approved') {
           return NextResponse.json(
@@ -83,7 +91,7 @@ export async function POST(request: NextRequest) {
           )
         }
       }
-      
+
       const success = await addFriend(userId, friendId)
 
       if (!success) {
@@ -94,19 +102,19 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // 通知情報を取得
-      const requesterUser = await getUser(userId)
-      const friendUser = await getUser(friendId)
+      // 申請先ユーザーに通知を送信
+      const fromUser = await getUser(userId)
+      const toUser = await getUser(friendId)
 
-      // 友達申請の通知を作成
-      await createNotification({
-        userId: friendId,
-        type: 'friend_request',
-        title: '友達申請',
-        message: `${requesterUser?.name || 'ユーザー'}さんから友達申請が届いています`,
-        fromUserId: userId,
-        fromUserName: requesterUser?.name || 'ユーザー'
-      })
+      if (fromUser && toUser) {
+        await createNotificationFromTemplate(
+          friendId,
+          'friend_request',
+          { fromUserName: fromUser.name },
+          userId,
+          fromUser.name
+        )
+      }
 
       // 友達申請メールを送信（受信者にメールアドレスがある場合のみ）
       if (friendUser?.email) {
@@ -172,15 +180,16 @@ export async function PUT(request: NextRequest) {
     // 申請者に承認通知を送信
     const approverUser = await getUser(userId)
     const requesterUser = await getUser(requesterId)
-    
-    await createNotification({
-      userId: requesterId,
-      type: 'friend_accepted',
-      title: '友達申請承認',
-      message: `${approverUser?.name || 'ユーザー'}さんがあなたの友達申請を承認しました`,
-      fromUserId: userId,
-      fromUserName: approverUser?.name || 'ユーザー'
-    })
+
+    if (approverUser && requesterUser) {
+      await createNotificationFromTemplate(
+        requesterId,
+        'friend_accepted',
+        { fromUserName: approverUser.name },
+        userId,
+        approverUser.name
+      )
+    }
 
     // 友達申請承認メールを送信（申請者にメールアドレスがある場合のみ）
     if (requesterUser?.email) {
