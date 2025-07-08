@@ -68,7 +68,6 @@
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "latest",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.3",
     "vaul": "latest",
     "zod": "^3.24.1",
     "zustand": "^5.0.6"
@@ -79,6 +78,7 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

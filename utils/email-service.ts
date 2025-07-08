@@ -1,6 +1,6 @@
 
 import nodemailer from 'nodemailer'
-import { query } from './db'
+import { createClient } from './db'
 
 interface EmailTemplate {
   id: number
@@ -22,7 +22,7 @@ class EmailService {
   private transporter: nodemailer.Transporter
 
   constructor() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
@@ -35,10 +35,12 @@ class EmailService {
 
   async getTemplate(templateKey: string): Promise<EmailTemplate | null> {
     try {
-      const result = await query(
+      const client = await createClient()
+      const result = await client.query(
         'SELECT * FROM email_templates WHERE template_key = $1',
         [templateKey]
       )
+      client.release()
       return result.rows[0] || null
     } catch (error) {
       console.error(`テンプレート取得エラー (${templateKey}):`, error)
@@ -65,7 +67,8 @@ class EmailService {
     retryCount: number = 0
   ): Promise<void> {
     try {
-      await query(
+      const client = await createClient()
+      await client.query(
         `INSERT INTO email_logs (user_id, template_key, recipient_email, subject, status, error_message, retry_count, sent_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
@@ -79,6 +82,7 @@ class EmailService {
           status === 'sent' ? new Date() : null
         ]
       )
+      client.release()
     } catch (error) {
       console.error('メールログ保存エラー:', error)
     }
