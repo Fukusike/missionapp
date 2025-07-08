@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const response = NextResponse.json({ message: 'ログアウトしました' })
+    const response = NextResponse.json({ 
+      message: 'ログアウトしました',
+      redirect: '/login'
+    })
     
     // セッションクッキーを削除
     response.cookies.set('session', '', {

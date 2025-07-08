@@ -193,9 +193,36 @@ export default function ProfilePage() {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push("/register")
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // ローカルストレージをクリア
+        localStorage.removeItem('user')
+
+        toast({
+          title: "ログアウト",
+          description: "ログアウトしました",
+        })
+
+        // ログイン画面にリダイレクト
+        router.push(data.redirect || '/login')
+      } else {
+        throw new Error('ログアウトに失敗しました')
+      }
+    } catch (error) {
+      console.error('ログアウトエラー:', error)
+      toast({
+        title: "エラー",
+        description: "ログアウトに失敗しました",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
