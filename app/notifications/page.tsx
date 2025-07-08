@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -75,7 +74,7 @@ export default function NotificationsPage() {
 
   const markAllAsRead = async () => {
     if (!currentUserId) return
-    
+
     try {
       const response = await fetch('/api/notifications', {
         method: 'PUT',
@@ -121,7 +120,7 @@ export default function NotificationsPage() {
       setSelectedNotification(notification)
       setIsApprovalDialogOpen(true)
     }
-    
+
     if (!notification.isRead) {
       markAsRead(notification.id)
     }
@@ -151,7 +150,9 @@ export default function NotificationsPage() {
         setIsApprovalDialogOpen(false)
         setSelectedNotification(null)
         // 通知リストを更新
-        await fetchNotifications(currentUserId)
+        if (currentUserId) {
+          await fetchNotifications(currentUserId)
+        }
       } else {
         throw new Error('承認に失敗しました')
       }
@@ -191,7 +192,9 @@ export default function NotificationsPage() {
         setIsApprovalDialogOpen(false)
         setSelectedNotification(null)
         // 通知リストを更新
-        await fetchNotifications(currentUserId)
+        if (currentUserId) {
+          await fetchNotifications(currentUserId)
+        }
       } else {
         throw new Error('拒否に失敗しました')
       }

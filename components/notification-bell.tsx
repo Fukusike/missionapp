@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,24 +11,20 @@ import {
 } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
 import { getCurrentUserId } from '@/utils/user-store'
+import { useNotificationStore } from '@/utils/notification-store'
 import Link from 'next/link'
 
-interface Notification {
-  id: string
-  type: string
-  title: string
-  message: string
-  fromUserId: string
-  fromUserName: string
-  isRead: boolean
-  createdAt: Date
-}
-
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading, 
+    fetchNotifications, 
+    markAsRead 
+  } = useNotificationStore()
 
   useEffect(() => {
     const userId = getCurrentUserId()
@@ -36,43 +32,12 @@ export default function NotificationBell() {
     if (userId) {
       fetchNotifications(userId)
     }
-  }, [])
-
-  const fetchNotifications = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/notifications?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(data)
-        setUnreadCount(data.filter((n: Notification) => !n.isRead).length)
-      }
-    } catch (error) {
-      console.error('通知取得エラー:', error)
-    }
-  }
+  }, [fetchNotifications])
 
   const recentNotifications = notifications.slice(0, 5)
 
   const handleNotificationClick = async (id: string) => {
-    try {
-      const response = await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          notificationId: parseInt(id),
-          action: 'markAsRead'
-        }),
-      })
-
-      if (response.ok && currentUserId) {
-        // 通知を再取得
-        await fetchNotifications(currentUserId)
-      }
-    } catch (error) {
-      console.error('通知更新エラー:', error)
-    }
+    await markAsRead(id)
   }
 
   return (
