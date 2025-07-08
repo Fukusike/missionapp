@@ -145,11 +145,10 @@ export default function RegisterPage() {
       email: email.trim(),
       password: password,
       profileImage: profileImage,
-      profileImageFile: profileImage, // Base64データとして送信
+      profileImageFile: profileImage || undefined, // Base64データとして送信
       points: 0,
       submissions: 0,
       badges: [],
-      createdAt: new Date().toISOString(),
     }
 
     await saveUser(userData)
