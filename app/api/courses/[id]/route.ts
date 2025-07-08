@@ -4,10 +4,11 @@ import { updateCourse, deleteCourse, getCourse } from '../../../../utils/db'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const courseId = parseInt(params.id)
+    const { id } = await params
+    const courseId = parseInt(id)
     if (isNaN(courseId)) {
       return NextResponse.json({ error: '無効な講義IDです' }, { status: 400 })
     }
@@ -33,10 +34,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const courseId = parseInt(params.id)
+    const { id } = await params
+    const courseId = parseInt(id)
     if (isNaN(courseId)) {
       return NextResponse.json({ error: '無効な講義IDです' }, { status: 400 })
     }
@@ -51,10 +53,11 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const courseId = parseInt(params.id)
+    const { id } = await params
+    const courseId = parseInt(id)
     if (isNaN(courseId)) {
       return NextResponse.json({ error: '無効な講義IDです' }, { status: 400 })
     }
