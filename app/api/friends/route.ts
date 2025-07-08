@@ -117,15 +117,15 @@ export async function POST(request: NextRequest) {
       }
 
       // 友達申請メールを送信（受信者にメールアドレスがある場合のみ）
-      if (friendUser?.email) {
+      if (toUser?.email) {
         try {
           await emailService.sendFriendRequestEmail(
             friendId,
-            friendUser.email,
+            toUser.email,
             userId,
-            requesterUser?.name || 'ユーザー'
+            fromUser?.name || 'ユーザー'
           )
-          console.log(`友達申請メール送信成功: ${friendUser.email}`)
+          console.log(`友達申請メール送信成功: ${toUser.email}`)
         } catch (error) {
           console.error('友達申請メール送信エラー:', error)
           // メール送信エラーは友達申請の成功に影響しない
