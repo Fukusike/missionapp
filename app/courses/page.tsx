@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Plus, BookOpen, Edit, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { getCurrentUser } from '@/utils/user-store'
+import { getCurrentUserId, getUser } from '@/utils/user-store'
 
 // 講義の型定義
 interface Course {
@@ -49,8 +49,14 @@ export default function CoursesPage() {
 
   // ユーザー情報を取得
   useEffect(() => {
-    const user = getCurrentUser()
-    setCurrentUser(user)
+    const loadUser = async () => {
+      const userId = getCurrentUserId()
+      if (userId) {
+        const user = await getUser()
+        setCurrentUser(user)
+      }
+    }
+    loadUser()
   }, [])
 
   // 講義一覧を取得

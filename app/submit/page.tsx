@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Camera, ImageIcon, X, Scan, BookOpen } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { getUser, submitAssignment, type UserData, getCurrentUser } from "@/utils/user-store"
+import { getUser, submitAssignment, type UserData, getCurrentUserId } from "@/utils/user-store"
 import { judgeAssignment, type AssignmentJudgment } from "@/utils/course-store"
 import AssignmentJudgmentDisplay from "@/components/assignment-judgment"
 import { useToast } from "@/hooks/use-toast"
@@ -53,11 +53,10 @@ export default function SubmitPage() {
 
   // ユーザー情報と講義データを取得
   useEffect(() => {
-    const user = getCurrentUser()
-    setCurrentUser(user)
-
-    if (user?.id) {
-      fetchCourses(user.id)
+    const userId = getCurrentUserId()
+    if (userId) {
+      setCurrentUser({ id: userId })
+      fetchCourses(userId)
     }
   }, [])
 
