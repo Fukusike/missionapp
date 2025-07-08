@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, BookOpen, Edit, Trash2 } from "lucide-react"
+import { Plus, BookOpen, Edit, Trash2, Home } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { getCurrentUserId, getUser } from '@/utils/user-store'
+import { useRouter } from 'next/navigation'
 
 // 講義の型定義
 interface Course {
@@ -46,6 +47,7 @@ export default function CoursesPage() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const router = useRouter()
 
   // ユーザー情報を取得
   useEffect(() => {
@@ -235,6 +237,14 @@ export default function CoursesPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/')}
+                className="border-green-200 text-green-600 hover:bg-green-50"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                ホーム
+              </Button>
               <BookOpen className="h-8 w-8 text-green-500" />
               <h1 className="text-3xl font-bold text-gray-800">講義管理</h1>
             </div>
