@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createCourse, getUserCourses } from '../../../utils/db'
+import { createCourse, getUserCourses, checkCourseDuplicate } from '../../../utils/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,10 +32,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '講義名、担当教員、カラーは必須です' }, { status: 400 })
     }
 
+    // 重複チェック
+    const isDuplicate = await checkCourseDuplicate(userId, name.trim(), instructor.trim())
+    if (isDuplicate) {
+      return NextResponse.json({ 
+        error: '同じ講義名と担当教員の講義が既に登録されています' 
+      }, { status: 409 })
+    }
+
     const course = await createCourse({
       userId,
-      name,
-      instructor,
+      name: name.trim(),
+      instructor: instructor.trim(),
       color
     })
 

@@ -133,7 +133,16 @@ export default function CoursesPage() {
           description: "講義を追加しました",
         })
       } else {
-        throw new Error('講義の追加に失敗しました')
+        const errorData = await response.json()
+        if (response.status === 409) {
+          toast({
+            title: "登録済みの講義です",
+            description: errorData.error,
+            variant: "destructive",
+          })
+        } else {
+          throw new Error(errorData.error || '講義の追加に失敗しました')
+        }
       }
     } catch (error) {
       console.error('講義追加エラー:', error)

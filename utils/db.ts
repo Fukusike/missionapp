@@ -742,6 +742,22 @@ export async function checkFriendshipExists(userId: string, friendId: string) {
 
 // 講義管理API関数
 
+// 講義の重複チェック
+export async function checkCourseDuplicate(userId: string, name: string, instructor: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT id FROM courses 
+      WHERE user_id = $1 AND name = $2 AND instructor = $3
+    `, [userId, name, instructor])
+
+    return result.rows.length > 0
+  } finally {
+    client.release()
+  }
+}
+
 // 講義を作成
 export async function createCourse(courseData: {
   userId: string
