@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Camera, ImageIcon, X, Scan, BookOpen } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { getUser, submitAssignment, type UserData } from "@/utils/user-store"
-import { getCourses, judgeAssignment, type AssignmentJudgment } from "@/utils/course-store"
+import { getUser, submitAssignment, type UserData, getCurrentUser } from "@/utils/user-store"
+import { judgeAssignment, type AssignmentJudgment } from "@/utils/course-store"
 import AssignmentJudgmentDisplay from "@/components/assignment-judgment"
 import { useToast } from "@/hooks/use-toast"
 
@@ -26,6 +26,7 @@ export default function SubmitPage() {
   const [user, setUser] = useState<any>(null)
   const [judgment, setJudgment] = useState<AssignmentJudgment | null>(null)
   const [courses, setCourses] = useState<any[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function SubmitPage() {
 
   useEffect(() => {
     if (!isMounted) return
-    
+
     // ユーザーデータを取得
     const loadUserData = async () => {
       const userData = await getUser()
@@ -45,11 +46,37 @@ export default function SubmitPage() {
       }
 
       setUser(userData)
-      setCourses(getCourses())
     }
-    
+
     loadUserData()
   }, [router, isMounted])
+
+  // ユーザー情報と講義データを取得
+  useEffect(() => {
+    const user = getCurrentUser()
+    setCurrentUser(user)
+
+    if (user?.id) {
+      fetchCourses(user.id)
+    }
+  }, [])
+
+  const fetchCourses = async (userId: string) => {
+    try {
+      const response = await fetch('/api/courses', {
+        headers: {
+          'x-user-id': userId,
+        },
+      })
+
+      if (response.ok) {
+        const coursesData = await response.json()
+        setCourses(coursesData)
+      }
+    } catch (error) {
+      console.error('講義取得エラー:', error)
+    }
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

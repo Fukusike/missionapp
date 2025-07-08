@@ -161,6 +161,20 @@ export async function createTables() {
       )
     `)
 
+    // 講義管理テーブル
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS courses (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        instructor VARCHAR(255) NOT NULL,
+        color VARCHAR(7) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `)
+
     console.log('全テーブルが作成されました')
   } catch (error) {
     console.error('テーブル作成エラー:', error)
@@ -721,6 +735,93 @@ export async function checkFriendshipExists(userId: string, friendId: string) {
     } else {
       return { exists: true, type: 'pending' }
     }
+  } finally {
+    client.release()
+  }
+}
+
+// 講義管理API関数
+
+// 講義を作成
+export async function createCourse(courseData: {
+  userId: string
+  name: string
+  instructor: string
+  color: string
+}) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      INSERT INTO courses (user_id, name, instructor, color)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `, [courseData.userId, courseData.name, courseData.instructor, courseData.color])
+
+    return result.rows[0]
+  } finally {
+    client.release()
+  }
+}
+
+// ユーザーの講義リストを取得
+export async function getUserCourses(userId: string) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      SELECT * FROM courses 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC
+    `, [userId])
+
+    return result.rows
+  } finally {
+    client.release()
+  }
+}
+
+// 講義を更新
+export async function updateCourse(courseId: number, courseData: {
+  name: string
+  instructor: string
+  color: string
+}) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query(`
+      UPDATE courses 
+      SET name = $1, instructor = $2, color = $3, updated_at = NOW()
+      WHERE id = $4
+      RETURNING *
+    `, [courseData.name, courseData.instructor, courseData.color, courseId])
+
+    return result.rows[0]
+  } finally {
+    client.release()
+  }
+}
+
+// 講義を削除
+export async function deleteCourse(courseId: number) {
+  const client = await createClient()
+
+  try {
+    await client.query('DELETE FROM courses WHERE id = $1', [courseId])
+    return true
+  } finally {
+    client.release()
+  }
+}
+
+// 特定の講義を取得
+export async function getCourse(courseId: number) {
+  const client = await createClient()
+
+  try {
+    const result = await client.query('SELECT * FROM courses WHERE id = $1', [courseId])
+    return result.rows[0] || null
   } finally {
     client.release()
   }
